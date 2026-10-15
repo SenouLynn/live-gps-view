@@ -1,0 +1,3 @@
+{"version":1,"vehicleId":"demo-1","sessionId":"sf-pass-1","timeMs":0,"latitudeDeg":37.807,"longitudeDeg":-122.465,"altitude":{"meters":180,"reference":"wgs84-ellipsoid"},"provenance":"fixture"}
+{"version":1,"vehicleId":"demo-1","sessionId":"sf-pass-1","timeMs":1000,"latitudeDeg":37.8071,"longitudeDeg":-122.4648,"altitude":{"meters":180,"reference":"wgs84-ellipsoid"},"provenance":"fixture"}
+{"version":1,"vehicleId":"demo-1","sessionId":"sf-pass-1","timeMs":2000,"latitudeDeg":37.8072,"longitudeDeg":-122.4646,"altitude":{"meters":180,"reference":"wgs84-ellipsoid"},"provenance":"fixture"}
