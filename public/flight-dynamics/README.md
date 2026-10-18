@@ -22,6 +22,9 @@ creator and CC BY 4.0 attribution. Choosing a visual mesh does not configure a
 physics model. The physics catalog lives in `src/physicsAircraft.ts`.
 
 This milestone uses calm air and trimmed airborne initialization at 100 kt.
-Terrain contact, takeoff/landing, aircraft systems UI, and persistent internal
-engine state are not implemented. Physics altitude is JSBSim's geodetic height
+The application detects bare-earth terrain contact and freezes the aircraft with a
+crash overlay and Reset button. This simple reference-point clearance check is
+separate from JSBSim landing gear: no bounce, runway operations, buildings or trees.
+Missing terrain is reported as collision unavailable. Takeoff/landing, aircraft
+systems UI, and persistent internal engine state are not implemented. Physics altitude is JSBSim's geodetic height
 above its WGS84 ellipsoid; it is not an MSL altitude.

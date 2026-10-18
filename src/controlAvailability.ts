@@ -9,6 +9,7 @@ export interface ControlContext {
   radar: boolean;
   vehicles: boolean;
   livePose: boolean;
+  physicsReplay?: boolean;
 }
 /** Empty reason means enabled. All camera owners use this one availability policy. */
 export function controlAvailability(c: ControlContext): Record<string, string> {
@@ -16,6 +17,7 @@ export function controlAvailability(c: ControlContext): Record<string, string> {
   const cameraOwner = c.overview ? `Return from ${overviewName} to use flight controls.`
     : c.trafficFollow ? 'Return to your own vehicle to use these controls.' : '';
   const replay = cameraOwner || (c.source !== 'demo' ? 'Available in Validation demo replay.' : '');
+  const replayOverrides = replay || (c.physicsReplay ? 'Physics validation uses recorded aircraft altitude and attitude.' : '');
   const sandbox = cameraOwner || (c.source !== 'sandbox' ? 'Available in Sandbox.' : '');
   const view = cameraOwner || (c.source === 'live' ? 'YALB-GCS uses the measured cockpit camera.' : '');
   const follow = view || (c.view === 'cockpit' ? 'Choose a follow or flight director view.' : '');
@@ -25,8 +27,9 @@ export function controlAvailability(c: ControlContext): Record<string, string> {
     'camera-focus': c.overview ? `Return from ${overviewName} to use camera keys.` : !c.trafficFollow ? waiting : '',
     'camera-reset': c.overview ? `Return from ${overviewName} to recenter the flight camera.` : !c.trafficFollow ? waiting : '',
     play: replay, restart: replay, seek: replay, speed: replay,
-    'altitude-mode': replay, altitude: replay,
-    pitch: replay || (c.view !== 'cockpit' ? 'Camera pitch applies to the replay cockpit view.' : ''),
+    'validation-scenario': replay,
+    'altitude-mode': replayOverrides, altitude: replayOverrides,
+    pitch: replayOverrides || (c.view !== 'cockpit' ? 'Camera pitch applies to the replay cockpit view.' : ''),
     'replay-view': view,
     'follow-distance': follow, 'follow-elevation': follow,
     'sandbox-mode': sandbox, 'physics-hangar': sandbox, 'physics-throttle': sandbox, 'physics-trim': sandbox,

@@ -5,6 +5,9 @@ import { application, saveApplication } from './applicationState';
 import { stepSandbox, sandboxGroundSpeedMps, createSandboxEngine, type SandboxState } from './sandboxFlight.ts';
 import { createFlightSimulation } from './flightSimulation.ts';
 import { interpolateAircraft, type AircraftEngine, type AircraftState, type AircraftControls } from './jsbsimEngine.ts';
+import { showCrashOverlay, hideCrashOverlay } from './crashOverlay.ts';
+import { setupSandboxTerrain } from './sandboxTerrain.ts';
+import type { TerrainContact } from './terrainContact.ts';
 import type { setupFollowCamera } from './followCamera';
 import type { setupDirectorOverlay, DirectorSample } from './flightDirector';
 
@@ -16,6 +19,13 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   const simulation=createFlightSimulation(createSandboxEngine(state));
   let aircraft:AircraftEngine|undefined;
   let lastAircraftPose:AircraftState|undefined;
+  let contactPose:AircraftState|undefined;
+  let ground:TerrainContact={};
+  const terrain=setupSandboxTerrain(viewer);
+  function clearContact(){
+    contactPose=undefined;ground={};terrain.reset();
+    hideCrashOverlay();
+  }
   let physics:ReturnType<typeof createFlightSimulation<AircraftState, AircraftControls, SandboxState>>|undefined;
   let phase:'idle'|'loading'|'ready'|'failed'='idle', loadEpoch=0;
   let lastHud=-Infinity;
@@ -26,7 +36,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   const trim=el('physics-trim') as HTMLInputElement;
   const physicsSelected=()=>mode.value==='physics';
   const clear=()=>{keys.clear();simulation.clearElapsed();if(phase==='ready')physics?.clearElapsed();};
-  const pauseButton=el('sandbox-pause');
+  const pauseButton=el('sandbox-pause') as HTMLButtonElement;
   const syncPause=()=>{pauseButton.textContent=paused?'Resume':'Pause';};
   function status(value:string){el('physics-status').textContent=value;el('physics-status').dataset.phase=phase;}
   function syncMode(){
@@ -41,7 +51,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   throttle.oninput=syncInputs;trim.oninput=syncInputs;
   function disposePhysics(){loadEpoch++;aircraft?.destroy();aircraft=undefined;physics=undefined;phase='idle';}
   async function initializePhysics(){
-    disposePhysics();clear();lastAircraftPose=undefined;phase='loading';status('Loading C172 flight dynamics…');
+    disposePhysics();clear();clearContact();lastAircraftPose=undefined;phase='loading';status('Loading C172 flight dynamics…');
     el('physics-readout').textContent='';
     const epoch=loadEpoch;
     let timer:ReturnType<typeof setTimeout>|undefined;
@@ -64,7 +74,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
     }finally{clearTimeout(timer);}
   }
   function resetPhysics(){
-    clear();
+    clear();clearContact();
     if(!aircraft||!physics){void initializePhysics();return;}
     try{
       physics.reset({...application.sandbox.start});
@@ -74,19 +84,21 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
     }catch{phase='failed';status('C172 reset failed · choose Simple Free Flight or Reset to retry.');disposePhysics();phase='failed';}
   }
   function togglePause(){
+    if(physicsSelected()&&contactPose)return;
     paused=!paused;
     if(!physicsSelected())application.sandbox.paused=paused;
     saveApplication();clear();syncPause();
   }
   syncPause();syncMode();syncInputs();
   pauseButton.onclick=togglePause;
-  el('sandbox-reset').onclick=()=>{
+  function resetFlight(){
     if(physicsSelected())resetPhysics();
     else {state={...application.sandbox.start};application.sandbox.current=state;simulation.reset(state);application.sandbox.paused=false;}
     paused=false;saveApplication();clear();syncPause();canvas.focus();
-  };
+  }
+  el('sandbox-reset').onclick=resetFlight;
   mode.onchange=()=>{
-    clear();disposePhysics();
+    clear();disposePhysics();clearContact();
     application.sandbox.mode=physicsSelected()?'physics':'simple';
     paused=physicsSelected()?false:application.sandbox.paused;
     syncMode();syncPause();saveApplication();lastHud=-Infinity;
@@ -121,13 +133,14 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   window.addEventListener('pageshow',event=>{if(event.persisted&&active&&physicsSelected())void initializePhysics();});
   function setActive(value:boolean){
     if(value===active)return;
-    active=value;clear();
+    active=value;clear();terrain.reset();
     el('sandbox-panel').hidden=!value;el('sandbox-controls').hidden=!value;
     if(value){canvas.focus();if(physicsSelected()&&phase==='idle')void initializePhysics();}
   }
   return {
     currentPose() { return {...(physicsSelected()?(lastAircraftPose??application.sandbox.start):state)}; },
     relocate() {
+      clearContact();
       state={...application.sandbox.start};application.sandbox.current=state;simulation.reset(state);
       if(physicsSelected()){
         if(phase==='loading')void initializePhysics();else if(aircraft)resetPhysics();
@@ -142,11 +155,22 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
       if(blocked)clear();
       let physicsPose:AircraftState|undefined=physicsSelected()?lastAircraftPose:undefined;
       if(physicsSelected()){
-        throttle.disabled=trim.disabled=phase!=='ready';
+        throttle.disabled=trim.disabled=phase!=='ready'||!!contactPose;
         if(physics&&phase==='ready'){
           try{
-            if(!paused&&!blocked)physics.advance({...controls,rudder:Number(keys.has('KeyE'))-Number(keys.has('KeyQ')),throttle:Number(throttle.value)/100,trim:Number(trim.value)/100},dt);
-            physicsPose=!paused&&!blocked?physics.render(interpolateAircraft):physics.snapshot();
+            if(!paused&&!blocked&&!contactPose)physics.advance({...controls,rudder:Number(keys.has('KeyE'))-Number(keys.has('KeyQ')),throttle:Number(throttle.value)/100,trim:Number(trim.value)/100},dt);
+            physicsPose=contactPose??(!paused&&!blocked?physics.render(interpolateAircraft):physics.snapshot());
+            if(!contactPose){
+              // Check committed engine state; interpolation can trail it by one step.
+              const current=physics.snapshot();
+              ground=terrain.update(current,now);
+              if(ground.contactHeightM!==undefined){
+                contactPose={...current,ellipsoidHeightM:ground.contactHeightM};
+                physicsPose=contactPose;paused=true;clear();syncPause();
+                status('Terrain contact · flight stopped · Reset to fly again');
+                showCrashOverlay(resetFlight);
+              }
+            }
             lastAircraftPose=physicsPose;
           }catch{phase='failed';status('Flight dynamics stopped · Reset to recover or choose Simple Free Flight.');clear();}
         }
@@ -174,17 +198,24 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
         command:physicsSelected()?undefined:{timeSeconds:render.timeSeconds,headingDeg:(render.headingDeg+9.80665*Math.tan(render.commandBankDeg*Math.PI/180)/sandboxGroundSpeedMps*180/Math.PI*2+360)%360,
           pitchDeg:render.commandPitchDeg,provenance:'synthetic'}};
       if(view==='director')overlay.update(pose,sample);
+      if(contactPose&&physicsSelected())pauseButton.disabled=true;
       if(now-lastHud<100)return;lastHud=now;
       el('source-badge').textContent='● SANDBOX';
       el('vehicle-title').textContent=physicsSelected()?'PHYSICS ENGINE · CESSNA 172P':'SIMPLE FREE FLIGHT · CESSNA 172';
       el('pose-note').textContent=`${physicsSelected()?'JSBSim':'Simple flight'} · pitch ${render.pitchDeg.toFixed(1)}° · bank ${render.rollDeg.toFixed(1)}°`;
-      const flightStatus=paused?'paused':blocked?'suspended':document.activeElement===canvas?'flying · keys active':'coasting · click Fly to steer';
+      const flightStatus=contactPose&&physicsSelected()?'terrain contact · Reset to fly again':paused?'paused':blocked?'suspended':document.activeElement===canvas?'flying · keys active':'coasting · click Fly to steer';
       el('telemetry-status').textContent=physicsSelected()?`Physics Engine ${phase==='ready'?flightStatus:phase}`:`Simple Free Flight ${flightStatus} · 50 m/s ground speed`;
-      if(physicsPose)el('physics-readout').textContent=`IAS ${physicsPose.indicatedAirspeedKt.toFixed(1)} kt · GS ${(physicsPose.groundSpeedMps/.514444).toFixed(1)} kt · VS ${Math.round(physicsPose.verticalSpeedMps/.00508)} ft/min`;
+      if(physicsPose)el('physics-readout').textContent=`${contactPose?'At contact · ':''}IAS ${physicsPose.indicatedAirspeedKt.toFixed(1)} kt · GS ${(physicsPose.groundSpeedMps/.514444).toFixed(1)} kt · VS ${Math.round(physicsPose.verticalSpeedMps/.00508)} ft/min`;
       el('alt-reference').textContent='ALT · WGS84';el('alt-read').textContent=`${render.ellipsoidHeightM.toFixed(0)} m`;
       el('heading').textContent=`${render.headingDeg.toFixed(0).padStart(3,'0')}°`;
       el('position').textContent=`${render.latitudeDeg.toFixed(5)}°, ${render.longitudeDeg.toFixed(5)}°`;
-      el('height-detail').textContent=physicsSelected()?'WGS84 ellipsoid altitude · airborne dynamics · no terrain collision':'Sandbox altitude limits 100–4000 m WGS84 · no terrain collision';
+      el('height-detail').textContent=physicsSelected()
+        ? contactPose?'Terrain contact · flight stopped · Reset to fly again'
+          : ground.groundM===undefined?'Terrain collision unavailable · waiting for ground data'
+          : `Ground ${ground.groundM.toFixed(0)} m WGS84 · clearance ${ground.clearanceM!.toFixed(1)} m · terrain contact stops flight`
+        : 'Sandbox altitude limits 100–4000 m WGS84 · no terrain collision';
+      el('height-detail').dataset.contact=String(!!contactPose&&physicsSelected());
+      if(contactPose&&physicsSelected())pauseButton.textContent='Stopped';
       el('time').textContent=`Sandbox · ${render.timeSeconds.toFixed(1)} s`;
       el('detail-status').textContent=`${performanceLabel} · ${physicsSelected()?'JSBSim C172 dynamics':'Simple Free Flight · fixed ground speed'}`;
     },

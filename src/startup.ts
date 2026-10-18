@@ -1,4 +1,5 @@
 import './style.css';
+import { validationScenarios } from './validationScenarios.ts';
 import { parseLocation } from './location';
 import { application, saveApplication } from './applicationState';
 import { workflows, workflowById, type Workflow, type WorkflowDescriptor, type WorkflowPath } from './workflows';
@@ -15,7 +16,7 @@ let launched = false;
 /** What each available path will actually use, read from the saved session. */
 const pathDetail: Record<string, () => string> = {
   'yalb-bridge': () => 'SSE /api/events → GCS_BACKEND_URL',
-  'demo-replay': () => `Burlington figure eight · ${clock(durationSeconds)} · ${application.replay.time > 0 ? `resumes at ${clock(application.replay.time)}` : 'from start'}`,
+  'demo-replay': () => `${validationScenarios.find(s=>s.id===application.controls['validation-scenario'])?.name??'Burlington figure eight'} · ${clock(application.controls['validation-scenario']&&application.controls['validation-scenario']!=='figure-eight'?12:durationSeconds)} · ${application.replay.time > 0 ? `resumes at ${clock(application.replay.time)}` : 'from start'}`,
   'physics-flight': () => 'Cessna 172P · JSBSim · 100 kt · new trimmed flight at configured start',
   'keyboard-flight': () => {
     if (!startFields.every(id => field(id).checkValidity())) return 'Check the start values below';

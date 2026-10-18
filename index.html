@@ -138,6 +138,10 @@
   <div id="controls-footer">
     <section class="section" aria-labelledby="h-flight">
       <h2 id="h-flight">Flight</h2>
+      <div id="validation-controls" hidden>
+        <label>Test scenario <select id="validation-scenario" aria-label="Demo replay test scenario"></select></label>
+        <p id="validation-status" class="note" role="status"></p>
+      </div>
       <label hidden>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option><option value="sandbox">Keyboard sandbox</option></select></label>
       <label id="vehicle-control" hidden>Vehicle <select id="vehicle" disabled></select></label>
       <div id="sandbox-panel" hidden>
@@ -148,7 +152,7 @@
         <label>Throttle <span class="range"><input id="physics-throttle" type="range" min="0" max="100" value="70" step="1"><output id="physics-throttle-label">70%</output></span></label>
         <label>Pitch trim <span class="range"><input id="physics-trim" type="range" min="-50" max="50" value="0" step="1"><output id="physics-trim-label">0</output></span></label>
         <p id="physics-readout" class="note" aria-live="off"></p>
-        <p class="note">Arrows: elevator / ailerons · Q/E: rudder. Release centers controls; the aircraft keeps flying. Trim + raises the nose. Reset / reload starts a new trimmed flight at 100 kt. No terrain collision.</p>
+        <p class="note">Arrows: elevator / ailerons · Q/E: rudder. Release centers controls; the aircraft keeps flying. Trim + raises the nose. Reset / reload starts a new trimmed flight at 100 kt. Terrain contact stops the flight; Reset to fly again. Buildings and trees are excluded.</p>
       </div>
       <div id="sandbox-controls" class="row-actions" hidden><button id="sandbox-fly" title="Focus the scene for arrow-key flight">Fly</button><button id="sandbox-pause">Pause</button><button id="sandbox-reset">Reset</button></div>
       </div>
@@ -387,5 +391,12 @@
   </div>
 </dialog>
 <script type="module" src="/src/startup.ts"></script>
+<dialog id="sandbox-crash" aria-labelledby="sandbox-crash-title" aria-describedby="sandbox-crash-detail">
+  <div class="crash-band">
+    <h2 id="sandbox-crash-title">Git gud kid</h2>
+    <p id="sandbox-crash-detail">Terrain contact · flight stopped</p>
+    <button id="sandbox-crash-reset" type="button" autofocus>Reset flight</button>
+  </div>
+</dialog>
 </body>
 </html>

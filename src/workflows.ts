@@ -42,7 +42,7 @@ export const workflows = [
       { id: 'blackbox', label: 'Blackbox Replay', status: 'todo' },
       { id: 'sitl', label: 'SITL', status: 'todo' },
     ],
-    brief: 'Burlington figure eight with a synthetic climb, descent, and flight director. Playback resumes where you left off.',
+    brief: 'Replay the figure eight or choose a repeatable physics validation scenario: trim, power, right-bank control, or terrain contact and reset.',
     action: 'Start replay',
   },
   {

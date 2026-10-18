@@ -392,3 +392,15 @@ dialog::backdrop{background:rgb(2 8 12 / .72);backdrop-filter:blur(4px)}
 .location-footer{border-top:1px solid var(--line)}
 #location-use{background:var(--accent);color:var(--accent-ink);flex:none}
 @media(max-width:700px){.location-layout{grid-template-columns:1fr;overflow:auto}.location-options{order:2;overflow:visible;border-right:0}.location-map{min-height:360px;order:1}.location-heading,.location-footer{padding:12px;align-items:flex-start}.location-footer{flex-direction:column;gap:8px}.location-map-tools{flex-wrap:wrap;left:8px;right:8px;top:8px}.location-map-tools button{flex:1}}
+
+/* A full-screen contact screen; the simulation stays frozen until reset. */
+#sandbox-crash{position:fixed;inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:auto}
+#sandbox-crash[open]{display:flex;align-items:center;justify-content:center}
+#sandbox-crash::backdrop{background:rgb(0 0 0 / .55);backdrop-filter:grayscale(1) blur(2px)}
+.crash-band{width:100%;padding:30px 20px 34px;text-align:center;background:rgb(0 0 0 / .6);animation:crash-in .25s ease-out}
+#sandbox-crash-title{color:#d94848;font-family:Impact,"Arial Black",sans-serif;font-size:clamp(54px,10vw,138px);font-weight:900;line-height:1.05;letter-spacing:-.035em;text-shadow:0 3px 8px rgb(0 0 0 / .7)}
+#sandbox-crash-detail{margin:12px 0 24px;color:#dedede;font-size:14px;letter-spacing:.08em}
+#sandbox-crash-reset{height:44px;padding:0 28px;border-color:rgb(255 255 255 / .55);background:rgb(255 255 255 / .08);color:#fff;font-size:14px}
+#sandbox-crash-reset:hover{background:rgb(255 255 255 / .18)}
+@keyframes crash-in{from{opacity:0;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.crash-band{animation:none}}

@@ -85,6 +85,7 @@ try {
   await page.$eval('#location-lat', el => { el.value = '43'; });
   await page.$eval('#location-lon', el => { el.value = '-72'; });
   await page.click('#location-use'); await ready(); await wait(200);
+  await page.waitForFunction(() => document.querySelector('#position').textContent.startsWith('43.00'), {timeout:10000});
   assert.match(await text('position'), /^43\.00/);
   assert.ok(await simTime() < 2, 'relocation resets physics time');
   await page.select('#sandbox-mode', 'simple'); await wait(200);
@@ -123,6 +124,6 @@ try {
   console.log(JSON.stringify({ label, result: 'passed', assertions: 'setup, WASM load, flight clock, pause, 3D hangar, controls, throttle/trim, all views, location suspension/relocation, reset, mode isolation, loading race, visual catalog, asset failure/retry, reload', browserErrors: errors, evidence }, null, 2));
 } catch (error) {
   await page.screenshot({ path: `${evidence}/${label}-failure.png` }).catch(() => {});
-  console.error(JSON.stringify({ phase: await text('physics-status').catch(() => ''), hud: await text('telemetry-status').catch(() => ''), browserErrors: errors }));
+  console.error(JSON.stringify({ phase: await text('physics-status').catch(() => ''), hud: await text('telemetry-status').catch(() => ''), environment: await text('environment').catch(() => ''), locationDialog: await page.$eval('#location-dialog', el => el.open).catch(() => null), savedStart: await page.evaluate(() => JSON.parse(localStorage.getItem('synthetic-fpv.application.v1'))?.sandbox.start).catch(() => null), browserErrors: errors }));
   throw error;
 } finally { await browser.close(); }

@@ -1,4 +1,5 @@
 import * as C from 'cesium';
+import { populateReplayScenarios, setupReplayScenarios } from './replayScenarios.ts';
 import { controlAvailability } from './controlAvailability';
 import { application, saveApplication } from './applicationState';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
@@ -20,13 +21,14 @@ import { durationSeconds, sampleRoute } from './pose';
 import { terrainStepSeconds, terrainHeightAt, resolveHeight } from './altitude';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => el<HTMLInputElement>(id);
+populateReplayScenarios();
 // Restore controls before feature modules install their handlers.
 el<HTMLSelectElement>('telemetry-source').value = application.workflow;
 for (const id of ['altitude-mode', 'altitude', 'pitch']) {
   const label = el(id).closest('label');
   if (label) label.hidden = application.workflow !== 'demo';
 }
-const persistedControls = ['location-hover', 'replay-view', 'camera-behavior', 'follow-distance', 'follow-elevation', 'scene-source', 'quality', 'altitude-mode', 'altitude', 'pitch', 'fov', 'speed', 'traffic-enabled', 'aircraft-models', 'wind-enabled', 'radar-enabled', 'airspace-ceilings', 'airspace-restrictions', 'airspace-sites', 'airspace-labels', 'airspace-opacity'];
+const persistedControls = ['validation-scenario', 'location-hover', 'replay-view', 'camera-behavior', 'follow-distance', 'follow-elevation', 'scene-source', 'quality', 'altitude-mode', 'altitude', 'pitch', 'fov', 'speed', 'traffic-enabled', 'aircraft-models', 'wind-enabled', 'radar-enabled', 'airspace-ceilings', 'airspace-restrictions', 'airspace-sites', 'airspace-labels', 'airspace-opacity'];
 for (const id of persistedControls) {
   const control = el<HTMLInputElement | HTMLSelectElement>(id);
   const value = application.controls[id];
@@ -211,7 +213,7 @@ function syncControlAvailability() {
   if (fixedCockpit) replayView.value = 'cockpit';
   else replayView.value = preferredView;
   for (const option of Array.from(replayView.options)) option.disabled = fixedCockpit && option.value !== 'cockpit';
-  const reasons = controlAvailability({ source, view: replayView.value, overview, overviewKind: 'orbit', trafficFollow,
+  const reasons = controlAvailability({ source, physicsReplay: el<HTMLSelectElement>('validation-scenario').value !== 'figure-eight', view: replayView.value, overview, overviewKind: 'orbit', trafficFollow,
     traffic: input('traffic-enabled').checked, satellites: input('gnss-3d').checked,
     radar: input('radar-enabled').checked, vehicles: el<HTMLSelectElement>('vehicle').options.length > 0,
     livePose: live.hasPose() });
@@ -244,6 +246,7 @@ document.addEventListener('click', syncControlAvailability);
 syncControlAvailability();
 
 let time = application.replay.time, playing = application.replay.playing, previous = performance.now(), lastHud = -Infinity;
+const validation = setupReplayScenarios(viewer, followCamera, directorOverlay, cameraControls, course=>weather.setCourse(course), () => { time=0; playing=true; syncPlay(); });
 const formatTime = (value: number) => `${Math.floor(value / 60).toString().padStart(2, '0')}:${Math.floor(value % 60).toString().padStart(2, '0')}`;
 function syncPlay() {
   el('play').dataset.state = playing ? 'playing' : 'paused';
@@ -253,11 +256,13 @@ function syncPlay() {
 function syncReplayBar() {
   const shown = el<HTMLSelectElement>('telemetry-source').value === 'demo'
     && !el<HTMLSelectElement>('traffic-follow').value && !gnssScene.overview();
+  validation.setVisible(shown);
+  input('seek').max = String(validation.duration);
   if (el('replay-bar').hidden === shown) { el('replay-bar').hidden = !shown; syncInsets(); }
   if (el('time').hidden !== shown) el('time').hidden = shown;
 }
-el('play').onclick = () => { if (time >= durationSeconds) time = 0; playing = !playing; syncPlay(); };
-el('restart').onclick = () => { time = 0; playing = true; syncPlay(); };
+el('play').onclick = () => { if (time >= validation.duration) time = 0; playing = !playing; syncPlay(); };
+el('restart').onclick = () => { validation.restart(); time = 0; playing = true; syncPlay(); };
 input('seek').oninput = () => { time = Number(input('seek').value); };
 for (const [id, suffix] of [['altitude', ' m'], ['pitch', '°'], ['fov', '°']]) {
   input(id).oninput = () => { el(id === 'altitude' ? 'alt-label' : `${id}-label`).textContent = input(id).value + suffix; };
@@ -312,9 +317,19 @@ viewer.scene.preUpdate.addEventListener(() => {
   }
   if (sandboxSelected) { sandbox.tick(dt, now, `${fps.toFixed(0)} FPS · render ${Math.round(adaptiveScale * 100)}%`); return; }
   const mode = el<HTMLSelectElement>('altitude-mode').value;
-  const canResolve = mode === 'ellipsoid' || terrainHeights.length > 0;
-  if (playing && canResolve && !document.querySelector('dialog[open]')) time = Math.min(durationSeconds, time + dt * Number(el<HTMLSelectElement>('speed').value));
-  if (time >= durationSeconds && playing) { playing = false; syncPlay(); }
+  const canResolve = validation.physics ? validation.ready : mode === 'ellipsoid' || terrainHeights.length > 0;
+  if (playing && canResolve && !document.querySelector('dialog[open]')) time = Math.min(validation.duration, time + dt * Number(el<HTMLSelectElement>('speed').value));
+  if (time >= validation.duration && playing) { playing = false; syncPlay(); }
+  if (validation.physics) {
+    const impact=validation.render(time, `${fps.toFixed(0)} FPS`);
+    if (impact!==undefined) { time=impact; playing=false; syncPlay(); }
+    el('replay-wait').hidden=true;
+    el('replay-elapsed').textContent=formatTime(time);
+    el('replay-total').textContent=formatTime(validation.duration);
+    input('seek').value=String(time);
+    input('seek').setAttribute('aria-valuetext', `${formatTime(time)} of ${formatTime(validation.duration)}`);
+    return;
+  }
   const pose = sampleRoute(time, Number(input('altitude').value));
   weather.setCourse(pose.headingDeg);
   const groundM = terrainHeightAt(terrainHeights, time);

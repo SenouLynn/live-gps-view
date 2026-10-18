@@ -97,3 +97,31 @@ test('snapshot interpolation wraps headings and dateline without mutating either
     assert.equal(a.headingDeg, 359); assert.equal(b.headingDeg, 1);
   } finally { aircraft.destroy(); }
 });
+
+test('visual replay scenarios use actual engine controls and repeatable contact recordings', async () => {
+  const { recordValidation, sampleValidation, validationScenarios, validationGroundM } = await import('./validationScenarios.ts');
+  const aircraft = await engine();
+  try {
+    const records = new Map();
+    for (const scenario of validationScenarios) {
+      if (scenario.id !== 'figure-eight') records.set(scenario.id, recordValidation(aircraft, scenario.id));
+    }
+    const level = sampleValidation(records.get('straight-line'), 10);
+    assert.ok(Math.abs(level.ellipsoidHeightM - 1100) < 2);
+    assert.ok(Math.abs(level.rollDeg) < 1);
+    const bank = sampleValidation(records.get('c172-right-bank'), 4);
+    assert.ok(bank.rollDeg > 5);
+    const energy = (id: string) => {
+      const flight = sampleValidation(records.get(id), 8);
+      return 9.80665 * flight.ellipsoidHeightM + flight.trueAirspeedMps ** 2 / 2;
+    };
+    assert.ok(energy('c172-full-power') > energy('c172-idle') + 100);
+    const crash = records.get('terrain-contact');
+    assert.ok(crash.impactSeconds > 2 && crash.impactSeconds < 12);
+    assert.equal(sampleValidation(crash, 12).ellipsoidHeightM, validationGroundM + 1.5);
+    const frozen = sampleValidation(crash, 12);
+    sampleValidation(crash, 0);
+    assert.deepEqual(sampleValidation(crash, 12), frozen, 'seeking backward and forward preserves the recording');
+    assert.ok(sampleValidation(crash, 1).ellipsoidHeightM > validationGroundM + 90);
+  } finally { aircraft.destroy(); }
+});
