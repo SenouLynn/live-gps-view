@@ -1,7 +1,328 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Synthetic FPV</title></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic FPV</title>
+</head>
+<body>
+<dialog id="startup" aria-labelledby="startup-title">
+  <form id="startup-form" novalidate>
+    <header class="startup-head">
+      <h1 id="startup-title">Choose your entry point</h1>
+      <p id="session-storage" role="status"></p>
+    </header>
+    <!-- Rows render from src/workflows.ts: one group per workflow, one radio per path. -->
+    <fieldset id="workflow-map" class="workflow-map"><legend class="visually-hidden">Workflow and path</legend></fieldset>
+    <div data-workflow-settings="sandbox" class="workflow-settings" hidden>
+      <div class="row-actions"><button id="startup-location" type="button">Choose location · search / map</button></div>
+      <div class="field-grid">
+        <label for="start-lat">Latitude<span class="unit-input"><input id="start-lat" type="number" min="-85" max="85" step="any" required aria-describedby="start-lat-error"><i>°</i></span><small id="start-lat-error" class="field-error"></small></label>
+        <label for="start-lon">Longitude<span class="unit-input"><input id="start-lon" type="number" min="-180" max="180" step="any" required aria-describedby="start-lon-error"><i>°</i></span><small id="start-lon-error" class="field-error"></small></label>
+        <label for="start-height">Altitude<span class="unit-input"><input id="start-height" type="number" min="100" max="4000" step="any" required aria-describedby="start-height-error"><i>m WGS84</i></span><small id="start-height-error" class="field-error"></small></label>
+        <label for="start-heading">Heading<span class="unit-input"><input id="start-heading" type="number" min="0" max="359.99" step="any" required aria-describedby="start-heading-error"><i>°</i></span><small id="start-heading-error" class="field-error"></small></label>
+      </div>
+      <p class="note">Changing the start begins a new flight; otherwise the saved one resumes.</p>
+    </div>
+    <footer class="startup-foot">
+      <div id="startup-error" class="banner banner-error" role="alert" hidden>
+        <p><b>The workspace didn’t start.</b> <span id="startup-error-text">Check your connection, then reload to try again.</span></p>
+        <button id="startup-reload" type="button">Reload</button>
+      </div>
+      <p id="workflow-brief" class="brief-text"></p>
+      <button type="submit" class="startup-continue" id="startup-action">Open workspace</button>
+    </footer>
+  </form>
+</dialog>
+<dialog id="location-dialog" aria-labelledby="location-title">
+  <header class="location-heading"><div><h2 id="location-title">Location picker</h2><p class="note">Choose a Sandbox starting point or inspect airspace.</p></div><button id="location-close" type="button">Close</button></header>
+  <div class="location-layout">
+    <aside class="location-options">
+      <form id="location-search-form"><label for="location-query">Find a place</label><div class="location-search-row"><input id="location-query" type="search" placeholder="City, airport, or landmark" minlength="2" maxlength="160" required><button type="submit">Search</button></div></form>
+      <div id="location-results" aria-label="Search results"></div>
+      <form id="location-coordinates">
+        <label>Latitude · °<input id="location-lat" type="number" min="-85" max="85" step="any" required></label>
+        <label>Longitude · °<input id="location-lon" type="number" min="-180" max="180" step="any" required></label>
+        <button type="submit">Go to coordinates</button>
+      </form>
+      <h3>Drone airspace · U.S.</h3>
+      <label class="check">Authorization ceilings <input id="location-ceilings" type="checkbox"></label><p id="location-ceilings-status" class="status" role="status">Off</p>
+      <label class="check">Security restrictions <input id="location-restrictions" type="checkbox"></label><p id="location-restrictions-status" class="status" role="status">Off</p>
+      <label class="check">Recreational sites <input id="location-sites" type="checkbox"></label><p id="location-sites-status" class="status" role="status">Off</p>
+      <button id="location-refresh-zones" type="button">Refresh zones here</button><p id="location-layer-region" class="note"></p><p id="location-zone-detail" class="note" role="status"></p>
+      <p class="note"><span style="color:#ff647c">■ Restrictions</span> · <span style="color:#ff9770">■ 0 ft threshold</span> · <span style="color:#ffd166">■ Positive threshold</span> · <span style="color:#9fe8c6">■ Recreational sites</span></p>
+      <p class="note">FAA values are authorization thresholds in feet AGL. This map omits some restrictions and TFRs; it does not grant flight permission.</p>
+      <p class="note">Place search: <a href="https://photon.komoot.io/" target="_blank" rel="noopener">Photon</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>. Zones: <a href="https://www.faa.gov/uas/commercial_operators/uas_facility_maps" target="_blank" rel="noopener">FAA</a>.</p>
+    </aside>
+    <div class="location-map"><div id="location-globe" aria-label="Location selection globe"></div><nav class="location-map-tools" aria-label="Location map controls"><button id="location-zoom-in" type="button" aria-label="Zoom in">+</button><button id="location-zoom-out" type="button" aria-label="Zoom out">−</button><button id="location-regional" type="button">Regional map</button><button id="location-world" type="button">Globe</button></nav></div>
+  </div>
+  <footer class="location-footer"><p id="location-status" class="status" role="status"></p><button id="location-use" type="button">Use as Sandbox start</button></footer>
+</dialog>
 <div id="globe" aria-label="Synthetic cockpit terrain view"></div>
-<header><div><span class="eyebrow">SYNTHETIC VISION / 01</span><h1>Forward view</h1></div><span id="source-badge" class="badge">● REPLAY</span></header>
-<div id="reticle" aria-hidden="true"><i></i><b>＋</b><i></i></div>
-<aside aria-label="Telemetry"><span id="vehicle-title" class="eyebrow">DEMO 01 · MARIN HEADLANDS</span><div class="metrics"><div><small id="alt-reference">ALT · AGL</small><strong id="alt-read">—</strong></div><div><small>COURSE</small><strong id="heading">—</strong></div></div><p id="position">Acquiring position…</p><p id="height-detail" role="status">Preparing terrain profile…</p><p id="time">00:00 / 02:00</p><p id="pose-note" class="muted">Synthetic route · inferred course · level horizon</p></aside>
-<footer><div class="transport"><button id="play">Pause</button><button id="restart">Restart</button><label class="seek">Route <input id="seek" type="range" min="0" max="120" step="0.1" value="0" aria-label="Route time"></label><select id="speed" aria-label="Replay speed"><option value="1">1× speed</option><option value="2">2× speed</option><option value="0.5">0.5× speed</option></select></div><div class="settings"><label>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option></select></label><label>Vehicle <select id="vehicle" disabled></select></label><label>Scene <select id="scene-source"><option value="terrain">Terrain + imagery</option><option value="google">Google 3D</option></select></label><label>Detail <select id="quality"><option value="balanced">Balanced</option><option value="high" selected>High</option><option value="ultra">Ultra</option></select></label><label>Reference <select id="altitude-mode"><option value="agl">Above ground (AGL)</option><option value="ellipsoid">WGS84 ellipsoid</option></select></label><label>Altitude <input id="altitude" type="range" min="25" max="1000" value="25" step="5"><output id="alt-label">25 m</output></label><label>Pitch <input id="pitch" type="range" min="-40" max="10" value="-8"><output id="pitch-label">−8°</output></label><label>Field of view <input id="fov" type="range" min="40" max="100" value="75"><output id="fov-label">75°</output></label></div><button id="retry-terrain" hidden>Retry terrain</button><p id="telemetry-status" role="status">Demo replay</p><p id="scene-status" role="status">Preparing scene…</p><p id="detail-status" aria-live="off">High detail · loading tiles…</p><p id="environment" role="status">Loading real terrain…</p><p class="muted">AGL follows sampled terrain, not buildings or trees. Terrain resolution limits clearance accuracy.</p></footer>
-<script type="module" src="/src/main.ts"></script></body></html>
+<div id="director-overlay" hidden>
+  <svg id="director-scene" aria-hidden="true">
+    <defs>
+      <!-- Flight path vector: wings stay parallel to the horizon. -->
+      <g id="fd-bird"><circle r="6"/><path d="M-6 0h-13M6 0h13M0-6v-8"/></g>
+      <!-- Command cue: fly the bird into the ring. -->
+      <g id="fd-ring"><circle r="17"/><path d="M0-17v-6M0 17v6M-17 0h-6M17 0h6"/></g>
+      <path id="fd-chevron" d="M-5-9 4 0-5 9"/>
+    </defs>
+    <line id="fd-steer"/>
+    <g id="fd-command" class="fd-cue fd-command">
+      <g class="fd-symbol"><use href="#fd-ring" class="fd-halo"/><use href="#fd-ring"/></g>
+      <g class="fd-edge"><use href="#fd-chevron" class="fd-halo"/><use href="#fd-chevron"/></g>
+    </g>
+    <g id="fd-path" class="fd-cue fd-path">
+      <g class="fd-symbol"><use href="#fd-bird" class="fd-halo"/><use href="#fd-bird"/></g>
+      <g class="fd-edge"><use href="#fd-chevron" class="fd-halo"/><use href="#fd-chevron"/></g>
+    </g>
+  </svg>
+</div>
+<!-- HUD: always-visible flight readouts over the scene. -->
+<header id="hud" aria-label="Flight HUD">
+  <div class="hud-row">
+    <label class="hud-cell"><small>VIEW</small><select id="replay-view"><option value="cockpit">Cockpit</option><option value="stable">Follow · stable horizon</option><option value="body">Follow · aircraft attitude</option><option value="director">Flight director</option></select></label>
+    <label class="hud-cell"><small>CAMERA</small><select id="camera-behavior"><option value="hold">Hold look</option><option value="return">Return forward on release</option></select></label>
+    <div class="hud-cell"><small>LOCATION</small><button id="location-open" type="button">Choose / explore</button></div>
+    <p class="hud-cell"><small id="alt-reference">ALT · AGL</small><b id="alt-read" class="readout">—</b></p>
+    <p class="hud-cell"><small>COURSE</small><b id="heading" class="readout">—</b></p>
+    <p class="hud-cell hud-position"><small>POSITION</small><b id="position" class="readout">Acquiring position…</b></p>
+  </div>
+  <div id="director-readout" class="hud-row hud-director" role="group" aria-label="Flight director" hidden>
+    <p class="fd-title">Flight director <span class="fd-tag">Demo</span></p>
+    <p class="fd-item fd-path"><svg class="fd-key" viewBox="-21 -16 42 26" aria-hidden="true"><use href="#fd-bird"/></svg>Path <b id="fd-path-read" class="readout">—</b></p>
+    <p class="fd-item fd-command"><svg class="fd-key" viewBox="-25 -25 50 50" aria-hidden="true"><use href="#fd-ring"/></svg><span id="fd-command-label">Command</span> <b id="fd-command-read" class="readout">—</b></p>
+    <p class="fd-item">Steer <b id="fd-steer-read" class="readout">—</b></p>
+  </div>
+</header>
+<div id="reticle" aria-hidden="true"><i></i><b></b><i></i><span id="reticle-reference" hidden>Forward</span></div>
+
+<!-- Demo replay transport: shown only while Telemetry is Demo replay. -->
+<section id="replay-bar" aria-label="Demo replay">
+  <button id="play" class="icon-button" type="button" aria-label="Pause replay" data-state="playing">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path class="icon-pause" d="M5.5 3.5v9M10.5 3.5v9"/><path class="icon-play" d="M5 3.2v9.6L12.8 8z"/></svg>
+  </button>
+  <button id="restart" class="icon-button" type="button" aria-label="Restart replay">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.6A4.9 4.9 0 1 0 4.6 4.4M4.4 1.8v2.8h2.8"/></svg>
+  </button>
+  <output id="replay-elapsed" class="readout" aria-hidden="true">00:00</output>
+  <input id="seek" type="range" min="0" max="120" step="0.1" value="0" aria-label="Route time" aria-valuetext="00:00 of 02:00">
+  <output id="replay-total" class="readout" aria-hidden="true">02:00</output>
+  <select id="speed" aria-label="Replay speed"><option value="1">1×</option><option value="2">2×</option><option value="0.5">0.5×</option></select>
+  <p id="replay-wait" class="status" role="status" hidden>Waiting for terrain profile…</p>
+</section>
+
+<nav id="sidebar" aria-label="Flight view controls">
+  <header class="ident">
+    <div class="ident-top">
+      <h1 id="workflow-name">Forward view</h1>
+      <button id="sidebar-toggle" type="button" aria-expanded="true" aria-controls="sidebar-body">Hide</button>
+    </div>
+    <div class="ident-meta">
+      <span id="source-badge" class="badge">● REPLAY</span>
+      <span id="vehicle-title">DEMO 01 · BURLINGTON, VT</span>
+    </div>
+  </header>
+
+  <div id="sidebar-body">
+  <div class="section"><button id="change-workflow" type="button">Workspace setup</button></div>
+  <aside aria-label="Telemetry" class="section">
+    <p id="height-detail" class="readout" role="status">Preparing terrain profile…</p>
+    <p id="pose-note" class="note">Synthetic route · inferred course · level horizon</p>
+    <p id="telemetry-status" class="status" role="status">Demo replay</p>
+    <p id="time" class="readout" hidden></p>
+  </aside>
+
+  <div id="controls-footer">
+    <section class="section" aria-labelledby="h-flight">
+      <h2 id="h-flight">Flight &amp; camera</h2>
+    <label class="check">Location hover <input id="location-hover" type="checkbox" aria-describedby="location-hover-note"></label>
+    <p id="location-hover-note" class="note">Hover for coordinates and elevation. Mint dot: surface. Gold ring and dashed line: ground beneath, shown through buildings when terrain data is available.</p>
+      <p id="control-context" class="note" role="status"></p>
+      <label hidden>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option><option value="sandbox">Keyboard sandbox</option></select></label>
+      <label id="vehicle-control" hidden>Vehicle <select id="vehicle" disabled></select></label>
+      <div id="sandbox-controls" hidden>
+        <p class="note">↑ nose up · ↓ nose down · ← / → bank and turn. Tap for small corrections; hold to build pitch or bank. Release to level. Fixed ground speed: 50 m/s (97 kt). Click Fly to steer; Space pauses. Demo only · no terrain collision.</p>
+        <div class="transport"><button id="sandbox-fly">Fly / focus keys</button><button id="sandbox-pause">Pause sandbox</button><button id="sandbox-reset">Reset flight</button></div>
+      </div>
+      <div id="follow-controls" hidden>
+        <label>Follow distance <span class="range"><input id="follow-distance" type="range" min="20" max="150" value="40" step="5"><output id="follow-distance-label">40 m</output></span></label>
+        <label>Follow elevation <span class="range"><input id="follow-elevation" type="range" min="0" max="60" value="12"><output id="follow-elevation-label">12°</output></span></label>
+        <p class="note">Cessna 172 · demo replay and keyboard sandbox. Stable follows course with a level horizon. Aircraft attitude follows yaw, pitch and roll. The demo replay figure eight climbs 120 m above the base altitude, then descends. Synthetic pitch follows the climb and descent; bank follows turn direction, limited to 35°.</p>
+      </div>
+      <div class="camera-keys">
+        <div class="row-actions"><button id="camera-focus" type="button">Focus camera keys</button><button id="camera-reset" type="button">Recenter · R</button></div>
+        <p class="note">W / S look up / down · A / D look left / right. In follow views, WASD orbits the aircraft. Click the scene to use keys; R recenters. Return forward mode recenters smoothly when keys are released. The reticle marks forward in cockpit views and the aircraft in follow views. Sandbox arrows steer the plane independently.</p>
+        <p id="camera-offset" class="readout" aria-live="off"></p>
+      </div>
+      <label>Scene <select id="scene-source"><option value="terrain">Terrain + imagery</option><option value="google">Google 3D</option></select></label>
+      <label>Detail <select id="quality"><option value="smooth" selected>Smooth · adaptive</option><option value="balanced">Balanced</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
+      <label>Reference <select id="altitude-mode"><option value="agl">Above ground (AGL)</option><option value="ellipsoid">WGS84 ellipsoid</option></select></label>
+      <label>Base altitude <span class="range"><input id="altitude" type="range" min="25" max="1000" value="25" step="5"><output id="alt-label">25 m</output></span></label>
+      <label id="cockpit-pitch">Camera pitch <span class="range"><input id="pitch" type="range" min="-90" max="90" value="-8"><output id="pitch-label">−8°</output></span></label>
+      <label>Field of view <span class="range"><input id="fov" type="range" min="40" max="100" value="75"><output id="fov-label">75°</output></span></label>
+      <div class="status-list">
+        <p id="scene-status" class="status" role="status">Preparing scene…</p>
+        <p id="detail-status" class="status" aria-live="off">High detail · loading tiles…</p>
+        <p id="environment" class="status" role="status">Loading real terrain…</p>
+      </div>
+      <button id="retry-terrain" hidden>Retry terrain</button>
+      <p class="note">AGL follows sampled terrain, not buildings or trees. Terrain resolution limits clearance accuracy.</p>
+    </section>
+  </div>
+
+  <section class="section" aria-labelledby="h-gnss">
+    <h2 id="h-gnss">Satellites</h2>
+    <label class="check">3D GNSS satellites <input id="gnss-3d" type="checkbox"></label>
+    <label class="check">Orbital paths · next 6 h <input id="gnss-paths" type="checkbox" checked></label>
+    <label class="check">Satellite labels <input id="gnss-labels" type="checkbox" checked></label>
+    <label class="check">Above observer mask only <input id="gnss-above-only" type="checkbox" checked></label>
+    <div class="row-actions">
+      <button id="gnss-overview">Orbit overview</button>
+      <button id="gnss-open" type="button">Sky plot</button>
+    </div>
+    <p id="gnss-3d-status" class="status" role="status">3D satellites off</p>
+    <p class="note">Real orbital altitude · enlarged markers. From the cockpit, pitch upward to see the sky. Overview shows all selected constellations.</p>
+  </section>
+
+  <section class="section" aria-labelledby="h-traffic">
+    <h2 id="h-traffic">Air traffic</h2>
+    <label class="check">Live aircraft <input id="traffic-enabled" type="checkbox" checked></label>
+    <label class="check">3D aircraft models <input id="aircraft-models" type="checkbox" checked></label>
+    <label>Cockpit <select id="traffic-follow" disabled><option value="">Own vehicle / demo</option></select></label>
+    <div class="row-actions"><button id="hangar-open" type="button">3D hangar · 8 aircraft</button></div>
+    <p id="traffic-status" class="status" role="status">Aircraft traffic off</p>
+    <p class="note"><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">Aircraft data: ADSB.lol · ODbL 1.0</a></p>
+  </section>
+
+  <section class="section" aria-labelledby="h-airspace">
+    <h2 id="h-airspace">Drone airspace · U.S.</h2>
+    <label class="check">FAA authorization ceilings <input id="airspace-ceilings" type="checkbox"></label>
+    <p id="airspace-ceilings-status" class="status" role="status">Off</p>
+    <label class="check">Security restrictions <input id="airspace-restrictions" type="checkbox"></label>
+    <p id="airspace-restrictions-status" class="status" role="status">Off</p>
+    <label class="check">Recreational flying sites <input id="airspace-sites" type="checkbox"></label>
+    <p id="airspace-sites-status" class="status" role="status">Off</p>
+    <label class="check">Zone labels <input id="airspace-labels" type="checkbox" checked></label>
+    <label>Zone opacity <span class="range"><input id="airspace-opacity" type="range" min="10" max="70" value="30" aria-label="Zone opacity"></span></label>
+    <div class="row-actions"><button id="airspace-overview">Airspace map</button><button id="airspace-refresh">Refresh here</button></div>
+    <p id="airspace-region" class="readout"></p>
+    <p id="airspace-detail" class="note" role="status"></p>
+    <p class="note"><span style="color:#ff647c">■ Security restriction footprint</span> · <span style="color:#ff9770">■ 0 ft authorization threshold</span> · <span style="color:#ffd166">■ Positive threshold (ft AGL)</span> · <span style="color:#9fe8c6">■ Recreational fixed site</span> · gray: unknown ceiling</p>
+    <p class="note">Ceilings are FAA authorization thresholds, not permission to fly. Security boundaries do not include all restrictions or TFRs; vertical limits and operating conditions vary. Recreational sites have their own conditions and access rules. Unshaded areas have unknown flight permission. Surface footprints only.</p>
+    <p class="note"><a href="https://www.faa.gov/uas/commercial_operators/uas_facility_maps" target="_blank" rel="noopener">FAA facility maps</a> · <a href="https://udds-faa.opendata.arcgis.com/" target="_blank" rel="noopener">FAA restriction data</a></p>
+  </section>
+
+  <section class="section" aria-labelledby="h-weather">
+    <h2 id="h-weather">Weather</h2>
+    <label class="check">Forecast wind <input id="wind-enabled" type="checkbox"></label>
+    <p class="note">Regional GFS field · 10 m above ground · arrows point downwind</p>
+    <label class="check">Observed radar <input id="radar-enabled" type="checkbox"></label>
+    <p class="note">NOAA MRMS · contiguous US · latest observation</p>
+
+  </section>
+  </div>
+</nav>
+
+  <section id="weather-card" class="panel" hidden aria-label="Regional weather map">
+    <div class="weather-heading">
+      <h2>Regional weather</h2>
+      <button id="weather-refresh">Refresh here</button>
+    </div>
+    <p id="weather-center" class="readout"></p>
+    <div id="weather-map">
+      <div id="weather-map-layer">
+      <img id="weather-basemap" alt="Regional aerial basemap">
+      <img id="radar-image" alt="Observed radar reflectivity" style="opacity:.65">
+      <svg id="wind-field" viewBox="0 0 300 300" aria-label="Forecast wind arrows and speeds"></svg>
+      <span class="north">N</span>
+      </div>
+      <span class="map-center" aria-hidden="true"></span>
+      <span id="weather-course" class="weather-course">COURSE UP</span>
+    </div>
+    <p id="map-status" class="status"></p>
+    <p id="wind-status" class="status">Wind off</p>
+    <p id="radar-status" class="status">Radar off</p>
+    <div id="radar-controls">
+      <label>Radar opacity <span class="range"><input id="radar-opacity" type="range" min="0" max="100" value="65"></span></label>
+      <img id="radar-legend" alt="NOAA reflectivity color legend">
+      <p id="legend-status" class="status"></p>
+    </div>
+    <p class="note">Works with both scene sources. Refresh here recenters on the camera; weather uses wall-clock time.</p>
+    <p class="note credits">
+      <a href="https://open-meteo.com/" target="_blank" rel="noopener">Wind: Open-Meteo / NOAA GFS · CC BY 4.0</a><br>
+      <a href="https://nowcoast.noaa.gov/" target="_blank" rel="noopener">Radar: NOAA nowCOAST · NWS/OAR MRMS</a><br>
+      Basemap © Esri, Maxar, Earthstar Geographics, GIS User Community
+    </p>
+  </section>
+
+<dialog id="hangar-dialog" aria-labelledby="hangar-title">
+  <div class="hangar-top">
+    <div><h2 id="hangar-title">3D hangar</h2><p class="subtitle">Aircraft library</p></div>
+    <button id="hangar-close" aria-label="Close aircraft hangar">Close</button>
+  </div>
+  <div class="hangar-body">
+    <nav id="hangar-catalog" aria-label="Choose an aircraft"></nav>
+    <div class="hangar-preview">
+      <div id="hangar-stage" aria-label="Interactive aircraft preview"></div>
+      <div class="hangar-caption"><h3 id="hangar-name"></h3><p id="hangar-family"></p></div>
+    </div>
+  </div>
+  <div class="hangar-bottom">
+    <div>
+      <button id="hangar-reset">Reset view</button>
+      <button id="hangar-spin">Pause rotation</button>
+      <p id="hangar-status" class="status" role="status"></p>
+    </div>
+    <p class="note"><a id="hangar-source" target="_blank" rel="noopener"></a><br><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · optimized by God's Eye View · <a href="/models/README.md" target="_blank" rel="noopener">full credits and modifications</a><br>Live models represent aircraft types; exact airframe and livery may differ.</p>
+  </div>
+</dialog>
+
+<dialog id="gnss-dialog" aria-labelledby="gnss-title">
+  <div class="hangar-top">
+    <div><h2 id="gnss-title">GNSS sky plot</h2><p class="subtitle">Predicted satellite visibility</p></div>
+    <button id="gnss-close">Close</button>
+  </div>
+  <div class="gnss-controls">
+    <label>Latitude <input id="gnss-lat" type="number" min="-90" max="90" step="any"></label>
+    <label>Longitude <input id="gnss-lon" type="number" min="-180" max="180" step="any"></label>
+    <label>Height · WGS84 m <input id="gnss-height" type="number" min="-1000" max="100000" step="any"></label>
+    <button id="gnss-apply">Apply location</button>
+    <button id="gnss-camera">Use camera location</button>
+  </div>
+  <div class="gnss-body">
+    <div>
+      <svg id="gnss-plot" viewBox="0 0 320 320" role="img" aria-label="Satellite sky plot: north up, east right, zenith in center, horizon at rim"></svg>
+      <label class="mask">Elevation mask <input id="gnss-mask" type="range" min="0" max="40" step="5" value="10"><output id="gnss-mask-value">10°</output></label>
+      <p class="note">Center = overhead · rim = horizon · dashed trails = next 60 min</p>
+    </div>
+    <div>
+      <h3 id="gnss-count">Waiting for catalog…</h3>
+      <p id="gnss-observer" class="readout"></p>
+      <p id="gnss-clock" class="readout"></p>
+      <div class="gnss-filters">
+        <label><input type="checkbox" data-gnss-group value="GPS" checked> GPS</label>
+        <label><input type="checkbox" data-gnss-group value="Galileo" checked> Galileo</label>
+        <label><input type="checkbox" data-gnss-group value="GLONASS" checked> GLONASS</label>
+        <label><input type="checkbox" data-gnss-group value="BeiDou" checked> BeiDou</label>
+        <label><input type="checkbox" data-gnss-group value="Other"> Other GNSS / augmentation</label>
+      </div>
+      <p id="gnss-breakdown" class="readout"></p>
+      <p id="gnss-message" class="status" role="status"></p>
+      <p id="gnss-data-status" class="status"></p>
+      <button id="gnss-reload">Reload catalog</button>
+      <p class="note">Receiver tracked / used: unavailable. Predicted overhead satellites may be unhealthy or unsupported by your receiver. Buildings, trees, antenna placement and interference are not modeled. This does not establish reception, a fix, DOP, or jamming.</p>
+      <p class="note"><a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">Orbital data: CelesTrak</a> · <a href="https://github.com/shashwatak/satellite-js" target="_blank" rel="noopener">SGP4/SDP4: satellite.js (MIT)</a></p>
+    </div>
+  </div>
+  <div class="gnss-table">
+    <table>
+      <thead><tr><th>System</th><th>Satellite</th><th>Azimuth</th><th>Elevation</th><th>In 15 min</th><th>Mask</th></tr></thead>
+      <tbody id="gnss-rows"></tbody>
+    </table>
+  </div>
+</dialog>
+<script type="module" src="/src/startup.ts"></script>
+</body>
+</html>

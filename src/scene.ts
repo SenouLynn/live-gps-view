@@ -65,7 +65,7 @@ export function setupSceneSource(viewer: C.Viewer, onTerrainSelected: () => void
   if (isGoogle()) void loadGoogle();
   return {
     setDetail(name: string) {
-      googleDetail = name === 'ultra' ? 4 : name === 'high' ? 8 : 16;
+      googleDetail = name === 'smooth' ? 24 : name === 'ultra' ? 4 : name === 'high' ? 8 : 16;
       if (tileset) tileset.maximumScreenSpaceError = googleDetail;
     },
     getStatus() {

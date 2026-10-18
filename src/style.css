@@ -1,4 +1,369 @@
-:root{font-family:Inter,system-ui,sans-serif;color:#e5f0ed;background:#0a151a;font-synthesis:none;color-scheme:dark}*{box-sizing:border-box}body{margin:0}#globe{position:absolute;inset:0}.cesium-viewer-bottom{bottom:0!important;font-size:10px}header,aside,footer{position:absolute;z-index:2}header{top:30px;left:32px;right:32px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;text-shadow:0 2px 10px #000}h1{font-size:26px;font-weight:450;margin:5px 0}.eyebrow{font-size:10px;letter-spacing:2px;color:#bed1cb}.badge{padding:8px 13px;font-size:11px;letter-spacing:2px;border:1px solid #b4d3c454;border-radius:4px;background:#102122bd;color:#a9efce}aside{left:32px;bottom:245px;background:#0a191ddd;border:1px solid #799a9450;border-radius:8px;padding:20px;width:340px;backdrop-filter:blur(16px)}.metrics{display:flex;gap:45px;margin:18px 0}.metrics small{display:block;font-size:10px;letter-spacing:1.5px;color:#9db1ac}.metrics strong{display:block;font-family:monospace;font-size:30px;font-weight:400;margin-top:5px}p{font-family:monospace;font-size:11px;line-height:1.5;margin:7px 0}.muted{color:#9fb2ad;font-size:10px}footer{left:32px;right:32px;bottom:36px;background:#0a191ded;border:1px solid #799a9450;border-radius:8px;padding:16px 20px;backdrop-filter:blur(16px)}.transport{display:flex;align-items:center;gap:10px}.seek{flex:1;display:flex;align-items:center;gap:14px;font-size:11px}.seek input{width:100%}button,select{border:1px solid #6e8e8655;border-radius:4px;padding:9px 14px;background:#233a3a;color:#e5f0ed;font:inherit;font-size:12px;cursor:pointer}button:hover{background:#355551}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a9efce;outline-offset:3px}.settings{display:flex;gap:30px;margin:16px 0 10px}.settings label{display:flex;align-items:center;gap:12px;font-size:11px;flex:1}.settings input{min-width:50px;width:100%}.settings output{white-space:nowrap;min-width:42px;font-family:monospace}input{accent-color:#9bd4ba}#reticle{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;color:#c6ead4;opacity:.8;pointer-events:none;text-shadow:0 1px 4px black}#reticle i{width:45px;height:1px;background:#c6ead4;box-shadow:0 1px 4px black}#reticle b{font-size:22px;font-weight:300}@media(max-width:700px){header{left:16px;right:16px;top:18px}aside{left:16px;bottom:310px;width:280px;padding:14px}footer{left:16px;right:16px;padding:12px;bottom:35px}.settings{flex-direction:column;gap:10px}.settings label{display:grid;grid-template-columns:80px 1fr 45px}.transport{flex-wrap:wrap}.seek{order:4;flex-basis:100%}.metrics{margin:10px 0}h1{font-size:22px}}
-.settings{flex-wrap:wrap}.settings label{min-width:180px}.settings select{max-width:180px}button[hidden]{display:none}#height-detail{color:#b4dfca}#retry-terrain{margin-top:8px}
-@media(max-width:700px){footer{max-height:45vh;overflow:auto}aside{bottom:calc(45vh + 50px);max-width:calc(100vw - 32px)}.settings label{min-width:0}.settings select{max-width:100%}}
-button:disabled,input:disabled,select:disabled{opacity:.45;cursor:not-allowed}#telemetry-status{color:#a9efce}
+/* One surface, one control size, one type scale. Mono is reserved for measurements. */
+:root{
+  --text:#e6f0ed;--text-2:#a9bdb7;--text-3:#7f958f;
+  --accent:#9fe8c6;--accent-ink:#06231a;
+  --panel:rgb(7 18 22 / .78);--panel-solid:#0c1a20;--line:rgb(170 205 195 / .14);--line-strong:rgb(170 205 195 / .28);
+  --control:rgb(255 255 255 / .06);--control-hover:rgb(255 255 255 / .11);
+  --fd-path:var(--accent);--fd-command:#ffc978;
+  --radius:8px;--radius-control:2px;--edge:16px;--side:312px;--h:30px;--bar-h:44px;
+  --sans:Inter,system-ui,-apple-system,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  font-family:var(--sans);font-size:12px;line-height:1.45;color:var(--text);background:#0a151a;
+  font-synthesis:none;color-scheme:dark;-webkit-font-smoothing:antialiased;
+}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden}
+::selection{background:var(--accent);color:var(--accent-ink)}
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+a{color:var(--accent);text-underline-offset:2px;text-decoration-color:rgb(159 232 198 / .4)}
+a:hover{text-decoration-color:currentColor}
+p{margin:0}
+h1,h2,h3{font-weight:500;margin:0;letter-spacing:-.01em}
+[hidden]{display:none!important}
+
+#globe{position:absolute;inset:0}
+.cesium-viewer-bottom{bottom:0!important;font-size:10px}
+
+/* ---------- Surfaces ---------- */
+.readout,output,#time{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--text)}
+.note{color:var(--text-2);font-size:11px;line-height:1.45}
+.status{color:var(--text-2);font-size:11px}
+
+/* ---------- Controls ---------- */
+button,select{
+  height:var(--h);padding:0 11px;border:1px solid var(--line);border-radius:var(--radius-control);
+  background:var(--control);color:var(--text);font:inherit;font-size:12px;cursor:pointer;
+  transition:background-color .15s,border-color .15s;
+}
+select{padding-right:6px;max-width:100%;min-width:0}
+select option{background:var(--panel-solid)}
+button:hover,select:hover{background:var(--control-hover);border-color:var(--line-strong)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled,input:disabled,select:disabled{opacity:.4;cursor:not-allowed}
+input{accent-color:var(--accent)}
+input[type=checkbox]{width:16px;height:16px;margin:0;flex:none}
+input[type=range]{margin:0;min-width:0;width:100%}
+.range{display:flex;align-items:center;gap:8px;min-width:0}
+.range output{min-width:4.5ch;text-align:right;color:var(--text-2)}
+
+/* ---------- Reticle (centre of the map, never covered) ---------- */
+#reticle{position:absolute;z-index:1;top:48%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:10px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .8))}
+#reticle i{width:40px;height:1px;background:#cdebdc}
+#reticle b{position:relative;width:14px;height:14px}
+#reticle b::before,#reticle b::after{content:"";position:absolute;background:#cdebdc}
+#reticle b::before{left:6.5px;top:0;width:1px;height:14px}
+#reticle b::after{top:6.5px;left:0;height:1px;width:14px}
+
+/* ---------- Left overlay: everything lives here, nothing is collapsed ---------- */
+#sidebar{
+  position:absolute;z-index:3;top:var(--edge);left:var(--edge);bottom:var(--edge);width:var(--side);
+  display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  box-shadow:0 8px 24px rgb(0 0 0 / .28);
+}
+/* Attribution must stay visible: shift Cesium's credits past the panel. */
+.cesium-viewer-bottom{left:calc(var(--side) + var(--edge) * 2)!important}
+
+.ident{padding:16px 16px 14px}
+.ident-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ident h1{font-size:17px}
+#sidebar-toggle{height:24px;padding:0 9px;font-size:11px;color:var(--text-2)}
+#sidebar.collapsed{bottom:auto}
+#sidebar.collapsed #sidebar-body{display:none}
+.ident-meta{display:flex;align-items:center;gap:10px;margin-top:6px;min-width:0}
+#vehicle-title{font-size:11px;letter-spacing:.05em;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{flex:none;font-size:10px;font-weight:600;letter-spacing:.1em;padding:3px 7px;border-radius:var(--radius-control);color:var(--accent);border:1px solid rgb(159 232 198 / .35)}
+
+.section{padding:14px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+.section h2{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:1px}
+.section label{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:10px;font-size:12px;color:var(--text-2)}
+.section label.check{display:flex;justify-content:space-between;color:var(--text)}
+.row-actions{display:flex;gap:6px}
+.row-actions button{flex:1}
+.status-list{display:flex;flex-direction:column;gap:2px}
+#retry-terrain{align-self:flex-start}
+
+/* Telemetry: the primary readout, so it gets the type weight */
+aside.section{background:rgb(0 0 0 / .18);gap:3px}
+#height-detail{color:var(--text-2)}
+aside .note{margin-top:6px;color:var(--text-3);font-size:10.5px}
+
+.transport{display:flex;gap:6px}
+.transport button{flex:1}
+#time{color:var(--text-2)}
+#telemetry-status{color:var(--accent);margin-top:4px}
+
+/* ---------- Replay bar: floats over the scene, demo replay only ---------- */
+#replay-bar{
+  position:absolute;z-index:3;bottom:32px;left:calc(var(--side) + var(--edge) * 2);right:var(--edge);
+  width:min(560px,calc(100% - var(--side) - var(--edge) * 3));margin-inline:auto;
+  display:flex;align-items:center;gap:8px;height:var(--bar-h);padding:0 8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  box-shadow:0 8px 24px rgb(0 0 0 / .28);
+}
+/* Keep clear of the weather card when it is open. */
+body:has(#weather-card:not([hidden])) #replay-bar{right:calc(300px + var(--edge) * 2);width:min(560px,calc(100% - var(--side) - 300px - var(--edge) * 4))}
+.icon-button{flex:none;width:var(--h);padding:0;display:grid;place-items:center}
+.icon-button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.icon-button .icon-play{fill:currentColor;stroke:none}
+#play[data-state=playing] .icon-play,#play[data-state=paused] .icon-pause{display:none}
+#play{background:rgb(159 232 198 / .14);border-color:rgb(159 232 198 / .35);color:var(--accent)}
+#play:hover{background:rgb(159 232 198 / .22)}
+#replay-bar output{flex:none;color:var(--text-2)}
+#replay-elapsed{color:var(--text);margin-left:4px}
+#seek{flex:1}
+#speed{flex:none;width:60px}
+#replay-wait{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);white-space:nowrap;padding:3px 9px;border-radius:var(--radius-control);background:var(--panel-solid);border:1px solid var(--line)}
+#controls-footer[inert]{opacity:.5}
+
+/* Weather map: its own panel, bottom right, independent of the controls */
+#weather-card{
+  position:absolute;z-index:3;right:var(--edge);bottom:32px;width:300px;max-height:calc(100vh - var(--edge) - 32px);
+  display:flex;flex-direction:column;gap:6px;padding:12px 14px;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  box-shadow:0 8px 24px rgb(0 0 0 / .28);
+}
+.weather-heading{display:flex;justify-content:space-between;align-items:center}
+.weather-heading h2{font-size:13px}
+.weather-heading button{height:26px;font-size:11px;padding:0 9px}
+#weather-map{position:relative;aspect-ratio:1;background:#162b34;overflow:hidden;border-radius:4px}
+#weather-map img,#wind-field{position:absolute;inset:0;width:100%;height:100%}
+#weather-map img:not([src]){display:none}
+#wind-field path{fill:none;stroke:#fff5a9;stroke-width:2;filter:drop-shadow(0 1px 2px #000)}
+#wind-field text{fill:#fff5a9;font:12px var(--mono);paint-order:stroke;stroke:#102020;stroke-width:3px}
+.map-center{position:absolute;top:50%;left:50%;width:12px;height:12px;transform:translate(-50%,-50%);filter:drop-shadow(0 1px 2px #000)}
+.map-center::before,.map-center::after{content:"";position:absolute;background:#fff}
+.map-center::before{left:5.5px;top:0;width:1px;height:12px}
+.map-center::after{top:5.5px;left:0;height:1px;width:12px}
+.north{position:absolute;right:8px;top:6px;font:600 11px var(--mono);text-shadow:0 1px 3px #000}
+#radar-controls{display:flex;flex-direction:column;gap:6px}
+#radar-legend{max-width:100%;background:#ddd;border-radius:2px}
+#radar-legend:not([src]){display:none}
+.credits{font-size:10px;color:var(--text-3)}
+
+/* ---------- Dialogs ---------- */
+dialog{border:1px solid var(--line-strong);border-radius:10px;background:var(--panel-solid);color:var(--text);box-shadow:0 24px 64px rgb(0 0 0 / .5)}
+dialog::backdrop{background:rgb(2 8 12 / .72);backdrop-filter:blur(4px)}
+.subtitle{color:var(--text-2);font-size:12px;margin-top:2px}
+.hangar-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.hangar-top h2{font-size:22px}
+
+#hangar-dialog{width:min(1100px,94vw);height:min(800px,90vh);padding:20px;overflow:auto}
+.hangar-body{display:grid;grid-template-columns:190px 1fr;gap:16px;height:65%;min-height:280px}
+#hangar-catalog{display:flex;flex-direction:column;gap:6px;overflow:auto}
+#hangar-catalog button{text-align:left;height:auto;min-height:var(--h);padding:6px 11px}
+#hangar-catalog button[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:var(--control-hover)}
+.hangar-preview{position:relative;min-width:0;background:#101c26;border-radius:var(--radius);overflow:hidden}
+#hangar-stage{position:absolute;inset:0}
+.hangar-caption{position:absolute;left:18px;top:14px;pointer-events:none;text-shadow:0 1px 5px #000}
+.hangar-caption h3{font-size:20px;font-weight:400}
+#hangar-family{color:var(--text-2);margin-top:2px}
+.hangar-bottom{display:flex;justify-content:space-between;gap:20px;margin-top:16px}
+.hangar-bottom>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.hangar-bottom>p{max-width:45%;font-size:10.5px}
+
+#gnss-dialog{width:min(1100px,95vw);max-height:92vh;padding:22px;overflow:auto}
+.gnss-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.gnss-controls label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text-2)}
+.gnss-controls input{width:140px;height:var(--h);padding:0 8px;border:1px solid var(--line);border-radius:var(--radius-control);background:var(--control);color:var(--text);font:12px var(--mono)}
+.gnss-body{display:grid;grid-template-columns:minmax(250px,360px) 1fr;gap:28px;margin-top:20px}
+.gnss-body>div{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.gnss-body>div:first-child{align-items:stretch}
+#gnss-plot{width:100%;max-height:360px}
+.mask{display:flex;align-items:center;gap:10px;font-size:12px}
+.gnss-filters{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0}
+.gnss-filters label{display:flex;align-items:center;gap:6px;font-size:12px}
+.gnss-table{overflow:auto;max-height:32vh;margin-top:20px}
+.gnss-table table{width:100%;border-collapse:collapse;font:11px var(--mono);font-variant-numeric:tabular-nums}
+.gnss-table th,.gnss-table td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line)}
+.gnss-table th{position:sticky;top:0;background:#14252c;font-family:var(--sans);font-weight:500;color:var(--text-2)}
+#gnss-count{font-size:20px;font-weight:400}
+
+/* ---------- Narrow screens: the panel becomes a bottom sheet ---------- */
+@media (max-width:700px){
+  :root{--edge:10px;--side:auto}
+  #sidebar{top:auto;right:var(--edge);width:auto;bottom:46px;max-height:46vh}
+  #replay-bar,body:has(#weather-card:not([hidden])) #replay-bar{left:var(--edge);right:var(--edge);width:auto;bottom:46px}
+  /* The sheet sits above the replay bar while it is shown. */
+  body:has(#replay-bar:not([hidden])) #sidebar{bottom:calc(46px + var(--bar-h) + 8px);max-height:calc(46vh - var(--bar-h))}
+  .cesium-viewer-bottom{left:0!important}
+  /* Between the HUD and the sheet; scrolls when the gap is short. */
+  #weather-card{top:calc(var(--hud-bottom, 120px) + 8px);bottom:auto;width:min(260px,62vw);max-height:max(160px,calc(var(--sheet-top, 50vh) - var(--hud-bottom, 120px) - 16px))}
+  .hangar-body{grid-template-columns:1fr;grid-template-rows:70px 1fr}
+  #hangar-catalog{flex-direction:row}
+  #hangar-catalog button{white-space:nowrap}
+  .hangar-bottom{display:block}
+  .hangar-bottom>p{max-width:100%;margin-top:10px}
+  .gnss-body{grid-template-columns:1fr}
+  .gnss-controls input{width:110px}
+  #gnss-plot{max-height:270px}
+  .gnss-table{max-height:35vh}
+}
+
+/* ---------- Flight director: drawn symbology over the scene ---------- */
+#director-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
+#director-scene{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#director-scene use{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#director-scene .fd-halo{stroke:rgb(2 10 12 / .62);stroke-width:5}
+.fd-path{color:var(--fd-path)}
+.fd-command{color:var(--fd-command)}
+.fd-cue .fd-edge{display:none}
+.fd-cue.is-edge .fd-symbol{display:none}
+.fd-cue.is-edge .fd-edge{display:inline}
+/* Captured: the bird sits inside the ring. */
+.fd-command.is-captured use:not(.fd-halo){stroke-width:3}
+#fd-steer{stroke:var(--fd-command);stroke-width:1.5;stroke-dasharray:3 5;stroke-linecap:round;opacity:.75}
+
+/* ---------- HUD: always-visible readouts, top centre of the scene ---------- */
+#hud{
+  position:absolute;z-index:3;top:var(--edge);left:calc(var(--side) + var(--edge) * 2);right:var(--edge);width:max-content;max-width:calc(100% - var(--side) - var(--edge) * 3);margin-inline:auto;
+  padding:8px 14px 10px;color:var(--text-2);
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  box-shadow:0 8px 24px rgb(0 0 0 / .28);
+}
+.hud-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px}
+.hud-cell{display:flex;flex-direction:column;gap:3px}
+.hud-cell small{font-size:10px;letter-spacing:.1em;color:var(--text-2)}
+.hud-cell b{font-size:17px;font-weight:400;line-height:26px;color:var(--text)}
+.hud-cell select{height:26px;min-width:172px}
+#alt-read{min-width:6ch}
+#heading{min-width:4ch}
+#position{min-width:24ch}
+.hud-director{align-items:center;gap:6px 18px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.fd-title{font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px}
+.fd-tag{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:var(--radius-control);color:var(--fd-command);border:1px solid rgb(255 201 120 / .35)}
+.fd-item{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.fd-item b{font-weight:400;min-width:12.5ch}
+.fd-key{width:21px;height:14px;overflow:visible}
+.fd-key use{fill:none;stroke:currentColor;stroke-width:3.5;stroke-linecap:round}
+.fd-item.fd-command .fd-key{width:16px;height:16px}
+.fd-item.fd-command .fd-key use{stroke-width:4}
+.fd-item.is-absent{color:var(--text-3)}
+.fd-item.is-absent b{color:var(--text-3)}
+#fd-steer-read{min-width:16.5ch}
+@media (max-width:700px){
+  #hud{left:var(--edge);max-width:none;width:auto;margin:0;padding:7px 12px 9px}
+  .hud-row{gap:6px 16px}
+  .hud-cell b{font-size:15px}
+  #position{min-width:0}
+  .hud-director{gap:4px 14px}
+  .fd-title{flex-basis:100%}
+  .fd-item b,#fd-steer-read{min-width:0}
+}
+
+/* Rotate all geographic layers together; the circular viewport avoids empty corners. */
+#weather-map{border-radius:50%}
+#weather-map-layer{position:absolute;inset:0;transform-origin:50% 50%}
+#weather-map .north{left:50%;right:auto;top:6px;transform:translateX(-50%)}
+.weather-course{position:absolute;top:24px;left:50%;transform:translateX(-50%);font:600 10px var(--mono);color:#fff;text-shadow:0 1px 3px #000;background:#102020b0;padding:2px 5px}
+
+/* ---------- Application entry point: the workflow map, plainly ---------- */
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#startup{--caution:var(--fd-command);--danger:#ff9c8a;
+  position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;
+  background:#0a151a;color:var(--text);overflow:auto;overscroll-behavior:contain;box-shadow:none}
+#startup::backdrop{background:#0a151a}
+#startup fieldset{margin:0;padding:0;border:0;min-width:0}
+#startup-form{width:min(920px,100%);min-height:100%;margin:0 auto;padding:48px 32px 0;display:flex;flex-direction:column}
+.startup-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:20px}
+#startup h1{font-size:20px;font-weight:500}
+#session-storage{font:11px var(--mono);color:var(--text-3)}
+
+/* One radio per path; columns: radio · path · status · what it uses. */
+.workflow-map{border-top:1px solid var(--line-strong)}
+.workflow-group{padding:14px 0 10px;border-bottom:1px solid var(--line)}
+.workflow-head{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:baseline;gap:12px;padding:0 10px 6px}
+.workflow-head b{font-size:14px;font-weight:600}
+.workflow-source,.workflow-ready{font:10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.workflow-summary{color:var(--text-2);font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workflow-group.is-selected .workflow-head b{color:var(--accent)}
+.path-row{display:grid;grid-template-columns:16px 168px minmax(0,1fr);align-items:center;gap:12px;min-height:32px;padding:0 10px;border-radius:var(--radius-control);cursor:pointer;font-size:12.5px}
+.path-row:hover{background:var(--control)}
+.path-row input{margin:0;width:14px;height:14px}
+.path-row:has(:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.path-row input:focus-visible{outline:none}
+.path-row:has(:checked){background:rgb(159 232 198 / .07)}
+.path-row:has(:checked) .path-name{color:var(--accent)}
+.path-status{font:10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.path-detail{font:11.5px var(--mono);font-variant-numeric:tabular-nums;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.path-row[data-status=todo]{color:var(--text-3);cursor:default}
+.path-row[data-status=todo]:hover{background:none}
+.path-row[data-status=todo] .path-status{color:var(--caution)}
+
+/* Sandbox start, under its path. */
+.workflow-settings{padding:12px 10px 6px 38px}
+.workflow-settings .note{margin-top:10px;color:var(--text-3)}
+.field-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;max-width:600px}
+.field-grid label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--text-2)}
+.unit-input{display:flex;align-items:center;height:var(--h);padding:0 9px;border:1px solid var(--line-strong);border-radius:var(--radius-control);background:var(--control);transition:border-color .15s}
+.unit-input:hover{border-color:rgb(170 205 195 / .4)}
+.unit-input:has(:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.unit-input input{flex:1;min-width:0;height:100%;padding:0;border:0;background:none;color:var(--text);font:12px var(--mono);font-variant-numeric:tabular-nums;outline:none;appearance:textfield;-moz-appearance:textfield}
+.unit-input input::-webkit-inner-spin-button,.unit-input input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.unit-input:has([aria-invalid=true]){border-color:var(--danger)}
+.unit-input i{flex:none;font:normal 11px var(--mono);color:var(--text-3)}
+.field-error{font-size:11px;line-height:1.35;color:var(--danger)}
+.field-error:empty{display:none}
+
+/* Footer: state, then the one action. */
+.startup-foot{position:sticky;bottom:0;margin-top:20px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 32px;padding:4px 0 24px;background:#0a151a}
+.startup-foot .banner{grid-column:1/-1}
+.brief-text{font-size:12.5px;color:var(--text-2);max-width:70ch}
+.banner{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 12px;border:1px solid rgb(255 201 120 / .35);border-radius:var(--radius-control);background:rgb(255 201 120 / .06)}
+.banner p{flex:1;font-size:12.5px;color:var(--text-2)}
+.banner b{font-weight:600;color:var(--text)}
+.banner button{flex:none;height:26px;font-size:12px}
+.banner-error{border-color:rgb(255 156 138 / .4);background:rgb(255 156 138 / .07)}
+.startup-continue{grid-column:2;height:36px;padding:0 18px;border-color:transparent;background:var(--accent);color:var(--accent-ink);font-weight:600}
+.startup-continue:hover{background:#b7f0d5;border-color:transparent}
+.startup-continue:disabled{opacity:1;background:var(--control);border-color:var(--line);color:var(--text-3)}
+
+@media (max-width:720px){
+  #startup-form{padding:24px 16px 0}
+  .startup-head{flex-direction:column;gap:4px}
+  .workflow-head{grid-template-columns:auto minmax(0,1fr) auto;row-gap:2px;padding-inline:6px}
+  .workflow-summary{grid-column:1/-1;grid-row:2;white-space:normal}
+  .path-row{grid-template-columns:16px minmax(0,1fr) auto;row-gap:0;padding:6px}
+  .path-detail{grid-column:2/-1;white-space:normal}
+  .path-detail:empty{display:none}
+  .workflow-settings{padding-left:6px}
+  .field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .startup-foot{grid-template-columns:1fr}
+  .startup-continue{grid-column:1;width:100%;height:40px}
+}
+.control-unavailable{color:var(--text-3)}
+#control-context{margin:8px 0 12px}
+.camera-keys{margin:12px 0;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.camera-keys .note{margin:8px 0}
+#reticle-reference{position:absolute;top:20px;left:50%;transform:translateX(-50%);white-space:nowrap;font:10px var(--mono);color:#cdebdc;text-shadow:0 1px 3px #000}
+#reticle.reticle-edge{opacity:.65}
+
+#location-dialog{width:min(1200px,96vw);height:min(860px,94dvh);max-height:94dvh;padding:0;overflow:hidden}
+#location-dialog[open]{display:flex;flex-direction:column}
+.location-heading,.location-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 20px;flex:none}
+.location-heading{border-bottom:1px solid var(--line)}
+.location-heading h2{font-size:19px}
+.location-layout{display:grid;grid-template-columns:280px 1fr;flex:1;min-height:0}
+.location-options{padding:16px;overflow:auto;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.location-options h3{margin-top:12px}
+.location-options label{display:flex;flex-direction:column;gap:5px}
+.location-options label.check{flex-direction:row;justify-content:space-between;align-items:center}
+.location-options input:not([type=checkbox]){min-width:0;width:100%;border:1px solid var(--line-strong);border-radius:4px;padding:8px;background:var(--control);color:var(--text);font:inherit}
+.location-search-row{display:flex;gap:6px;margin-top:6px}
+#location-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#location-coordinates button{grid-column:1/-1}
+#location-results{display:flex;flex-direction:column;gap:6px}
+#location-results:empty{display:none}
+#location-results button{height:auto;min-height:34px;padding:8px;text-align:left;white-space:normal}
+.location-map{position:relative;min-width:0;min-height:250px}
+#location-globe{position:absolute;inset:0}
+#location-globe .cesium-viewer-bottom{left:0!important}
+.location-map-tools{position:absolute;right:12px;top:12px;display:flex;gap:6px;padding:6px;background:var(--panel-solid);border:1px solid var(--line);border-radius:6px}
+.location-map-tools button{height:34px}
+.location-footer{border-top:1px solid var(--line)}
+#location-use{background:var(--accent);color:var(--accent-ink);flex:none}
+@media(max-width:700px){.location-layout{grid-template-columns:1fr;overflow:auto}.location-options{order:2;overflow:visible;border-right:0}.location-map{min-height:360px;order:1}.location-heading,.location-footer{padding:12px;align-items:flex-start}.location-footer{flex-direction:column;gap:8px}.location-map-tools{flex-wrap:wrap;left:8px;right:8px;top:8px}.location-map-tools button{flex:1}}
