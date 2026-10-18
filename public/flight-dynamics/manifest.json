@@ -1,0 +1,23 @@
+{
+  "source": "https://github.com/JSBSim-Team/jsbsim",
+  "revision": "e07a7d810d4f1048039d42545d008b8a998636fa",
+  "release": "v1.2.4",
+  "files": [
+    {
+      "path": "aircraft/c172p/c172p.xml",
+      "sha256": "0af58c613f7bca7e1d85f4b2e178a4d7b0b14dda6d5f79b38c571d9911187aa4"
+    },
+    {
+      "path": "engine/eng_io320.xml",
+      "sha256": "0cedc1e356a7a572a175f351a4abb952ba91081219a37dc7192bce3a2181d8c6"
+    },
+    {
+      "path": "engine/prop_75in2f.xml",
+      "sha256": "6481edf1da940fdea5358913d226c3e25d3e6b8209b4805370258a9a65ca7403"
+    },
+    {
+      "path": "COPYING",
+      "sha256": "1e7e6bae5a5bde32f1ae5a7c37a082d1ab03cf89354f7f936ac40be9e39a6531"
+    }
+  ]
+}
