@@ -54,7 +54,7 @@ input[type=range]{margin:0;min-width:0;width:100%}
 #reticle b::before{left:6.5px;top:0;width:1px;height:14px}
 #reticle b::after{top:6.5px;left:0;height:1px;width:14px}
 
-/* ---------- Left overlay: everything lives here, nothing is collapsed ---------- */
+/* ---------- Left overlay: controls and live state; reference text folds into legends ---------- */
 #sidebar{
   position:absolute;z-index:3;top:var(--edge);left:var(--edge);bottom:var(--edge);width:var(--side);
   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
@@ -66,33 +66,60 @@ input[type=range]{margin:0;min-width:0;width:100%}
 .cesium-viewer-bottom{left:calc(var(--side) + var(--edge) * 2)!important}
 
 .ident{padding:16px 16px 14px}
-.ident-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.ident h1{font-size:17px}
-#sidebar-toggle{height:24px;padding:0 9px;font-size:11px;color:var(--text-2)}
+.ident-top{display:flex;align-items:center;gap:6px}
+.ident h1{font-size:17px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sidebar-toggle,#change-workflow{flex:none;height:24px;padding:0 9px;font-size:11px;color:var(--text-2)}
 #sidebar.collapsed{bottom:auto}
 #sidebar.collapsed #sidebar-body{display:none}
 .ident-meta{display:flex;align-items:center;gap:10px;margin-top:6px;min-width:0}
 #vehicle-title{font-size:11px;letter-spacing:.05em;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{flex:none;font-size:10px;font-weight:600;letter-spacing:.1em;padding:3px 7px;border-radius:var(--radius-control);color:var(--accent);border:1px solid rgb(159 232 198 / .35)}
 
-.section{padding:14px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
-.section h2{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:1px}
+.section{padding:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+.section h2{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:3px}
+.stack{display:flex;flex-direction:column;gap:9px}
+.toggle-status{display:flex;flex-direction:column;gap:2px}
+.toggle-status .status{color:var(--text-3)}
+#camera-offset:empty,#airspace-region:empty,#airspace-detail:empty{display:none}
+
+/* Legends: optional reference material, closed by default, one per section. */
+.legend{margin-top:2px}
+.legend summary{display:flex;align-items:center;gap:7px;width:max-content;padding:2px 0;font-size:11px;color:var(--text-3);cursor:pointer;list-style:none;border-radius:var(--radius-control)}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary::before{content:"";width:5px;height:5px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);transition:transform .15s}
+.legend[open] summary::before{transform:rotate(45deg) translate(-1px,-1px)}
+.legend summary:hover{color:var(--text-2)}
+.legend summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend[open]{padding-bottom:2px}
+.legend[open]>:not(summary){margin-top:8px}
+.legend[open]>summary~*{padding-left:12px}
+.legend-sandbox,.legend-follow{display:flex;flex-direction:column;gap:8px}
+#sidebar:has(#sandbox-controls[hidden]) .legend-sandbox,#sidebar:has(#follow-controls[hidden]) .legend-follow{display:none}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:11px}
+.keys dt{font:11px var(--mono);color:var(--text)}
+.keys dd{margin:0;color:var(--text-2)}
+.keys.sources dt{font-family:var(--sans);color:var(--text-2)}
+.swatches{list-style:none;margin:0;display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text-2)}
+.swatches li{display:grid;grid-template-columns:10px 1fr;gap:9px;align-items:baseline}
+.swatch{width:10px;height:10px;border-radius:1px;background:var(--c);opacity:.85;transform:translateY(1px)}
+.swatch.dot{border-radius:50%;width:8px;height:8px;margin:1px;opacity:1}
+.swatch.ring{border-radius:50%;background:none;border:2px solid var(--c);opacity:1}
 .section label{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:10px;font-size:12px;color:var(--text-2)}
 .section label.check{display:flex;justify-content:space-between;color:var(--text)}
 .row-actions{display:flex;gap:6px}
-.row-actions button{flex:1}
+.row-actions button{flex:1;white-space:nowrap}
 .status-list{display:flex;flex-direction:column;gap:2px}
 #retry-terrain{align-self:flex-start}
 
-/* Telemetry: the primary readout, so it gets the type weight */
-aside.section{background:rgb(0 0 0 / .18);gap:3px}
+/* Telemetry: live state, read first */
+.telemetry{background:rgb(0 0 0 / .18);gap:3px;padding-block:12px}
 #height-detail{color:var(--text-2)}
-aside .note{margin-top:6px;color:var(--text-3);font-size:10.5px}
+.telemetry .note{color:var(--text-3);font-size:10.5px}
 
 .transport{display:flex;gap:6px}
 .transport button{flex:1}
 #time{color:var(--text-2)}
-#telemetry-status{color:var(--accent);margin-top:4px}
+#telemetry-status{color:var(--accent);margin-bottom:2px}
 
 /* ---------- Replay bar: floats over the scene, demo replay only ---------- */
 #replay-bar{
@@ -336,9 +363,7 @@ dialog::backdrop{background:rgb(2 8 12 / .72);backdrop-filter:blur(4px)}
   .startup-continue{grid-column:1;width:100%;height:40px}
 }
 .control-unavailable{color:var(--text-3)}
-#control-context{margin:8px 0 12px}
-.camera-keys{margin:12px 0;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.camera-keys .note{margin:8px 0}
+#camera-offset{color:var(--text-2)}
 #reticle-reference{position:absolute;top:20px;left:50%;transform:translateX(-50%);white-space:nowrap;font:10px var(--mono);color:#cdebdc;text-shadow:0 1px 3px #000}
 #reticle.reticle-edge{opacity:.65}
 

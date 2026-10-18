@@ -27,7 +27,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   const physicsSelected=()=>mode.value==='physics';
   const clear=()=>{keys.clear();simulation.clearElapsed();if(phase==='ready')physics?.clearElapsed();};
   const pauseButton=el('sandbox-pause');
-  const syncPause=()=>{pauseButton.textContent=paused?'Resume sandbox':'Pause sandbox';};
+  const syncPause=()=>{pauseButton.textContent=paused?'Resume':'Pause';};
   function status(value:string){el('physics-status').textContent=value;el('physics-status').dataset.phase=phase;}
   function syncMode(){
     el('physics-controls').hidden=!physicsSelected();

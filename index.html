@@ -117,6 +117,7 @@
   <header class="ident">
     <div class="ident-top">
       <h1 id="workflow-name">Forward view</h1>
+      <button id="change-workflow" type="button">Workspace setup</button>
       <button id="sidebar-toggle" type="button" aria-expanded="true" aria-controls="sidebar-body">Hide</button>
     </div>
     <div class="ident-meta">
@@ -126,49 +127,94 @@
   </header>
 
   <div id="sidebar-body">
-  <div class="section"><button id="change-workflow" type="button">Workspace setup</button></div>
-  <aside aria-label="Telemetry" class="section">
+  <!-- Live state only; explanations live in each section's legend. -->
+  <aside aria-label="Telemetry" class="section telemetry">
+    <p id="telemetry-status" class="status" role="status">Demo replay</p>
     <p id="height-detail" class="readout" role="status">Preparing terrain profile…</p>
     <p id="pose-note" class="note">Synthetic route · inferred course · level horizon</p>
-    <p id="telemetry-status" class="status" role="status">Demo replay</p>
     <p id="time" class="readout" hidden></p>
   </aside>
 
   <div id="controls-footer">
     <section class="section" aria-labelledby="h-flight">
-      <h2 id="h-flight">Flight &amp; camera</h2>
-    <label class="check">Location hover <input id="location-hover" type="checkbox" aria-describedby="location-hover-note"></label>
-    <p id="location-hover-note" class="note">Hover for coordinates and elevation. Mint dot: surface. Gold ring and dashed line: ground beneath, shown through buildings when terrain data is available.</p>
-      <p id="control-context" class="note" role="status"></p>
+      <h2 id="h-flight">Flight</h2>
       <label hidden>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option><option value="sandbox">Keyboard sandbox</option></select></label>
       <label id="vehicle-control" hidden>Vehicle <select id="vehicle" disabled></select></label>
-      <div id="sandbox-controls" hidden>
-        <p class="note">↑ nose up · ↓ nose down · ← / → bank and turn. Tap for small corrections; hold to build pitch or bank. Release to level. Fixed ground speed: 50 m/s (97 kt). Click Fly to steer; Space pauses. Demo only · no terrain collision.</p>
-        <div class="transport"><button id="sandbox-fly">Fly / focus keys</button><button id="sandbox-pause">Pause sandbox</button><button id="sandbox-reset">Reset flight</button></div>
+      <div id="sandbox-panel" hidden>
+      <label>Sandbox mode <select id="sandbox-mode"><option value="simple">Simple Free Flight</option><option value="physics">Physics Engine</option></select></label>
+      <div id="physics-controls" hidden>
+        <button id="physics-hangar" type="button">Aircraft · Cessna 172P · 3D hangar</button>
+        <p id="physics-status" class="status" role="status"></p>
+        <label>Throttle <span class="range"><input id="physics-throttle" type="range" min="0" max="100" value="70" step="1"><output id="physics-throttle-label">70%</output></span></label>
+        <label>Pitch trim <span class="range"><input id="physics-trim" type="range" min="-50" max="50" value="0" step="1"><output id="physics-trim-label">0</output></span></label>
+        <p id="physics-readout" class="note" aria-live="off"></p>
+        <p class="note">Arrows: elevator / ailerons · Q/E: rudder. Release centers controls; the aircraft keeps flying. Trim + raises the nose. Reset / reload starts a new trimmed flight at 100 kt. No terrain collision.</p>
       </div>
-      <div id="follow-controls" hidden>
+      <div id="sandbox-controls" class="row-actions" hidden><button id="sandbox-fly" title="Focus the scene for arrow-key flight">Fly</button><button id="sandbox-pause">Pause</button><button id="sandbox-reset">Reset</button></div>
+      </div>
+      <div id="follow-controls" class="stack" hidden>
         <label>Follow distance <span class="range"><input id="follow-distance" type="range" min="20" max="150" value="40" step="5"><output id="follow-distance-label">40 m</output></span></label>
         <label>Follow elevation <span class="range"><input id="follow-elevation" type="range" min="0" max="60" value="12"><output id="follow-elevation-label">12°</output></span></label>
-        <p class="note">Cessna 172 · demo replay and keyboard sandbox. Stable follows course with a level horizon. Aircraft attitude follows yaw, pitch and roll. The demo replay figure eight climbs 120 m above the base altitude, then descends. Synthetic pitch follows the climb and descent; bank follows turn direction, limited to 35°.</p>
       </div>
-      <div class="camera-keys">
-        <div class="row-actions"><button id="camera-focus" type="button">Focus camera keys</button><button id="camera-reset" type="button">Recenter · R</button></div>
-        <p class="note">W / S look up / down · A / D look left / right. In follow views, WASD orbits the aircraft. Click the scene to use keys; R recenters. Return forward mode recenters smoothly when keys are released. The reticle marks forward in cockpit views and the aircraft in follow views. Sandbox arrows steer the plane independently.</p>
-        <p id="camera-offset" class="readout" aria-live="off"></p>
-      </div>
+      <!-- Sandbox and follow blocks show only while their controls do (see style.css). -->
+      <details class="legend">
+        <summary>Flight keys · control notes</summary>
+        <p id="control-context" class="note" role="status"></p>
+        <div class="legend-sandbox">
+          <dl class="keys">
+            <dt>↑ ↓</dt><dd>Nose up / down</dd>
+            <dt>← →</dt><dd>Bank and turn</dd>
+            <dt>Space</dt><dd>Pause</dd>
+          </dl>
+          <p id="simple-flight-keys" class="note">Tap for small corrections; hold to build pitch or bank. Release to level. Click Fly to steer.</p>
+          <p id="simple-flight-speed" class="note">Simple Free Flight · fixed ground speed 50 m/s (97 kt). Demo only · no terrain collision.</p>
+        </div>
+        <div class="legend-follow">
+          <p class="note">Cessna 172 · demo replay and keyboard sandbox. Stable follows course with a level horizon. Aircraft attitude follows yaw, pitch and roll.</p>
+          <p class="note">The demo figure eight climbs 120 m above the base altitude, then descends. Synthetic pitch follows the climb and descent; bank follows turn direction, limited to 35°.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" aria-labelledby="h-camera">
+      <h2 id="h-camera">Camera</h2>
+      <div class="row-actions"><button id="camera-focus" type="button">Focus camera keys</button><button id="camera-reset" type="button">Recenter · R</button></div>
+      <p id="camera-offset" class="readout" aria-live="off"></p>
+      <label id="cockpit-pitch">Camera pitch <span class="range"><input id="pitch" type="range" min="-90" max="90" value="-8"><output id="pitch-label">−8°</output></span></label>
+      <label>Field of view <span class="range"><input id="fov" type="range" min="40" max="100" value="75"><output id="fov-label">75°</output></span></label>
+      <details class="legend">
+        <summary>Camera keys</summary>
+        <dl class="keys">
+          <dt>W S</dt><dd>Look up / down</dd>
+          <dt>A D</dt><dd>Look left / right</dd>
+          <dt>R</dt><dd>Recenter</dd>
+        </dl>
+        <p class="note">Click the scene to use keys. In follow views, WASD orbits the aircraft. Return forward recenters smoothly on release. Sandbox arrows steer the plane independently.</p>
+        <p class="note">The reticle marks forward in cockpit views and the aircraft in follow views.</p>
+      </details>
+    </section>
+
+    <section class="section" aria-labelledby="h-scene">
+      <h2 id="h-scene">Scene</h2>
       <label>Scene <select id="scene-source"><option value="terrain">Terrain + imagery</option><option value="google">Google 3D</option></select></label>
       <label>Detail <select id="quality"><option value="smooth" selected>Smooth · adaptive</option><option value="balanced">Balanced</option><option value="high">High</option><option value="ultra">Ultra</option></select></label>
       <label>Reference <select id="altitude-mode"><option value="agl">Above ground (AGL)</option><option value="ellipsoid">WGS84 ellipsoid</option></select></label>
       <label>Base altitude <span class="range"><input id="altitude" type="range" min="25" max="1000" value="25" step="5"><output id="alt-label">25 m</output></span></label>
-      <label id="cockpit-pitch">Camera pitch <span class="range"><input id="pitch" type="range" min="-90" max="90" value="-8"><output id="pitch-label">−8°</output></span></label>
-      <label>Field of view <span class="range"><input id="fov" type="range" min="40" max="100" value="75"><output id="fov-label">75°</output></span></label>
+      <label class="check">Location hover <input id="location-hover" type="checkbox"></label>
       <div class="status-list">
         <p id="scene-status" class="status" role="status">Preparing scene…</p>
         <p id="detail-status" class="status" aria-live="off">High detail · loading tiles…</p>
         <p id="environment" class="status" role="status">Loading real terrain…</p>
       </div>
       <button id="retry-terrain" hidden>Retry terrain</button>
-      <p class="note">AGL follows sampled terrain, not buildings or trees. Terrain resolution limits clearance accuracy.</p>
+      <details class="legend">
+        <summary>Hover key · AGL</summary>
+        <ul class="swatches">
+          <li><i class="swatch dot" style="--c:#9fe8c6"></i>Surface under the cursor</li>
+          <li><i class="swatch ring" style="--c:#ffd166"></i>Ground beneath · dashed line shows it through buildings when terrain data is available</li>
+        </ul>
+        <p class="note">AGL follows sampled terrain, not buildings or trees. Terrain resolution limits clearance accuracy.</p>
+      </details>
     </section>
   </div>
 
@@ -183,7 +229,10 @@
       <button id="gnss-open" type="button">Sky plot</button>
     </div>
     <p id="gnss-3d-status" class="status" role="status">3D satellites off</p>
-    <p class="note">Real orbital altitude · enlarged markers. From the cockpit, pitch upward to see the sky. Overview shows all selected constellations.</p>
+    <details class="legend">
+      <summary>About satellites</summary>
+      <p class="note">Real orbital altitude · enlarged markers. From the cockpit, pitch upward to see the sky. Overview shows all selected constellations.</p>
+    </details>
   </section>
 
   <section class="section" aria-labelledby="h-traffic">
@@ -193,34 +242,47 @@
     <label>Cockpit <select id="traffic-follow" disabled><option value="">Own vehicle / demo</option></select></label>
     <div class="row-actions"><button id="hangar-open" type="button">3D hangar · 8 aircraft</button></div>
     <p id="traffic-status" class="status" role="status">Aircraft traffic off</p>
-    <p class="note"><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">Aircraft data: ADSB.lol · ODbL 1.0</a></p>
+    <details class="legend">
+      <summary>Source</summary>
+      <p class="note"><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noopener noreferrer">Aircraft data: ADSB.lol · ODbL 1.0</a></p>
+    </details>
   </section>
 
   <section class="section" aria-labelledby="h-airspace">
     <h2 id="h-airspace">Drone airspace · U.S.</h2>
-    <label class="check">FAA authorization ceilings <input id="airspace-ceilings" type="checkbox"></label>
-    <p id="airspace-ceilings-status" class="status" role="status">Off</p>
-    <label class="check">Security restrictions <input id="airspace-restrictions" type="checkbox"></label>
-    <p id="airspace-restrictions-status" class="status" role="status">Off</p>
-    <label class="check">Recreational flying sites <input id="airspace-sites" type="checkbox"></label>
-    <p id="airspace-sites-status" class="status" role="status">Off</p>
+    <div class="toggle-status"><label class="check">FAA authorization ceilings <input id="airspace-ceilings" type="checkbox"></label><p id="airspace-ceilings-status" class="status" role="status">Off</p></div>
+    <div class="toggle-status"><label class="check">Security restrictions <input id="airspace-restrictions" type="checkbox"></label><p id="airspace-restrictions-status" class="status" role="status">Off</p></div>
+    <div class="toggle-status"><label class="check">Recreational flying sites <input id="airspace-sites" type="checkbox"></label><p id="airspace-sites-status" class="status" role="status">Off</p></div>
     <label class="check">Zone labels <input id="airspace-labels" type="checkbox" checked></label>
     <label>Zone opacity <span class="range"><input id="airspace-opacity" type="range" min="10" max="70" value="30" aria-label="Zone opacity"></span></label>
     <div class="row-actions"><button id="airspace-overview">Airspace map</button><button id="airspace-refresh">Refresh here</button></div>
     <p id="airspace-region" class="readout"></p>
     <p id="airspace-detail" class="note" role="status"></p>
-    <p class="note"><span style="color:#ff647c">■ Security restriction footprint</span> · <span style="color:#ff9770">■ 0 ft authorization threshold</span> · <span style="color:#ffd166">■ Positive threshold (ft AGL)</span> · <span style="color:#9fe8c6">■ Recreational fixed site</span> · gray: unknown ceiling</p>
-    <p class="note">Ceilings are FAA authorization thresholds, not permission to fly. Security boundaries do not include all restrictions or TFRs; vertical limits and operating conditions vary. Recreational sites have their own conditions and access rules. Unshaded areas have unknown flight permission. Surface footprints only.</p>
-    <p class="note"><a href="https://www.faa.gov/uas/commercial_operators/uas_facility_maps" target="_blank" rel="noopener">FAA facility maps</a> · <a href="https://udds-faa.opendata.arcgis.com/" target="_blank" rel="noopener">FAA restriction data</a></p>
+    <details class="legend">
+      <summary>Color key · limits</summary>
+      <ul class="swatches">
+        <li><i class="swatch" style="--c:#ff647c"></i>Security restriction footprint</li>
+        <li><i class="swatch" style="--c:#ff9770"></i>0 ft authorization threshold</li>
+        <li><i class="swatch" style="--c:#ffd166"></i>Positive threshold (ft AGL)</li>
+        <li><i class="swatch" style="--c:#9fe8c6"></i>Recreational fixed site</li>
+        <li><i class="swatch" style="--c:#a6aeb5"></i>Unknown ceiling</li>
+      </ul>
+      <p class="note">Ceilings are FAA authorization thresholds, not permission to fly. Security boundaries do not include all restrictions or TFRs; vertical limits and operating conditions vary. Recreational sites have their own conditions and access rules. Unshaded areas have unknown flight permission. Surface footprints only.</p>
+      <p class="note"><a href="https://www.faa.gov/uas/commercial_operators/uas_facility_maps" target="_blank" rel="noopener">FAA facility maps</a> · <a href="https://udds-faa.opendata.arcgis.com/" target="_blank" rel="noopener">FAA restriction data</a></p>
+    </details>
   </section>
 
   <section class="section" aria-labelledby="h-weather">
     <h2 id="h-weather">Weather</h2>
     <label class="check">Forecast wind <input id="wind-enabled" type="checkbox"></label>
-    <p class="note">Regional GFS field · 10 m above ground · arrows point downwind</p>
     <label class="check">Observed radar <input id="radar-enabled" type="checkbox"></label>
-    <p class="note">NOAA MRMS · contiguous US · latest observation</p>
-
+    <details class="legend">
+      <summary>Sources</summary>
+      <dl class="keys sources">
+        <dt>Wind</dt><dd>Regional GFS field · 10 m above ground · arrows point downwind</dd>
+        <dt>Radar</dt><dd>NOAA MRMS · contiguous US · latest observation</dd>
+      </dl>
+    </details>
   </section>
   </div>
 </nav>
@@ -259,7 +321,7 @@
 
 <dialog id="hangar-dialog" aria-labelledby="hangar-title">
   <div class="hangar-top">
-    <div><h2 id="hangar-title">3D hangar</h2><p class="subtitle">Aircraft library</p></div>
+    <div><h2 id="hangar-title">3D hangar</h2><p id="hangar-subtitle" class="subtitle">Aircraft library</p></div>
     <button id="hangar-close" aria-label="Close aircraft hangar">Close</button>
   </div>
   <div class="hangar-body">
@@ -271,6 +333,7 @@
   </div>
   <div class="hangar-bottom">
     <div>
+      <button id="hangar-use" hidden>Start C172 flight</button>
       <button id="hangar-reset">Reset view</button>
       <button id="hangar-spin">Pause rotation</button>
       <p id="hangar-status" class="status" role="status"></p>
