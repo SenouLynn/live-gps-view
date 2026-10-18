@@ -175,7 +175,7 @@ Location hover also marks the hovered surface with a mint dot. After the pointer
 
 ## Incremental flight simulation
 
-Work is isolated on `flight-sim/incremental-dynamics`. Sandbox setup and the in-flight
+Flight simulation work now continues on `main`. Sandbox setup and the in-flight
 **Sandbox mode** selector offer two independent modes:
 
 - **Simple Free Flight** keeps the assisted 50 m/s keyboard flight and saved progress.
@@ -194,9 +194,15 @@ pose. Reload preserves the chosen mode and settings, then starts a new trimmed
 physics flight. Full engine-state recovery is deferred.
 
 This increment models airborne flight in calm air. Weather overlays do not drive
-the engine. Terrain contact, ground operations, takeoff/landing, and joystick input
-remain future increments. There is no terrain collision or altitude clamp in Physics
-Engine. Reset returns to the configured WGS84 ellipsoid altitude. Assets, licenses,
+the engine. Physics Engine detects bare-earth terrain contact with a simple 1.5 m
+clearance around the aircraft reference point, freezes the flight, and shows a
+GTA-style **Git gud kid** overlay. **Reset flight** returns to the configured airborne
+start. This is a stop-on-contact rule, not landing gear, bounce, or mesh collision;
+buildings and trees are excluded. Terrain sampling is approximate between requests
+(up to 40 m and two seconds); when ground data is missing the HUD reports collision
+unavailable and flight continues. Simple Free Flight remains unchanged.
+Ground operations, takeoff/landing, and joystick input remain future increments.
+There is no altitude clamp in Physics Engine. Reset returns to the configured WGS84 ellipsoid altitude. Assets, licenses,
 source revision, and checksums are in [public/flight-dynamics](public/flight-dynamics/README.md).
 
 Validation includes real JSBSim WASM tests, the production build, and a browser
@@ -211,6 +217,8 @@ node scripts/validate-flight-browser.mjs http://127.0.0.1:53142 dev
 # To validate production instead:
 npx vite preview --host 127.0.0.1 --port 53143 --strictPort
 node scripts/validate-flight-browser.mjs http://127.0.0.1:53143 production
+# Deterministic terrain-contact and crash-overlay test (either dev or preview URL):
+node scripts/validate-terrain-browser.mjs http://127.0.0.1:53143 production
 ```
 
 Browser tests use an isolated headless Chrome, block external services, and write
@@ -220,3 +228,19 @@ imagery, terrain, and account access; those external services need a connected c
 The browser driver requires Node 22.12 or newer.
 
 Continuation instructions and current results: [flight simulator handoff](docs/flight-sim-handoff.md).
+
+## Visible test scenarios
+
+Open **Validation**, then **Flight → Test scenario**. **Routes** contains Straight
+line (trimmed C172) and Figure eight. **Feature enhancements** contains idle power,
+full power, right-bank control, and terrain contact/crash/reset.
+
+The physics options replay actual JSBSim recordings, support pause/scrub/restart
+and playback speed, and show the expected observation beside the selector. They
+use a clearly labeled flat test deck at 1000 m WGS84 so checks are repeatable
+without online terrain. Sandbox terrain contact still uses geographic terrain.
+Crash messages are selected randomly once per collision from the eight configured
+lines; both modes share the overlay and Reset behavior.
+
+New visible features should have a selectable validation scenario. The shared
+contract and extension process are described in [visual validation](docs/visual-validation.md).

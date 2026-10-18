@@ -4,16 +4,16 @@ Updated: October 18, 2026. Read this first when resuming with Claude or another 
 
 ## Authorized scope and latest user decisions
 
-The user wants gradual progress toward a realistic simulator, using a package for flight physics, on a separate branch with validation. They require this handoff so Claude can pick up the work if credits run out.
+The user wants gradual progress toward a realistic simulator, using a package for flight physics, with validation. The user initially requested a separate branch and has now explicitly requested continuing this work on `main`. They require this handoff so Claude can pick up the work if credits run out.
 
-The user specifically requested two isolated Sandbox modes, named **Simple Free Flight** and **Physics Engine**. Physics Engine must auto-load the C172 and offer a 3D hangar containing only configured physics assets (one C172 for now). Both are implemented. Deployment, publishing and merging have not been requested.
+The user specifically requested two isolated Sandbox modes, named **Simple Free Flight** and **Physics Engine**. Physics Engine must auto-load the C172 and offer a 3D hangar containing only configured physics assets (one C172 for now). Both are implemented. Continuing on `main` is authorized. Deployment and publishing have not been requested.
 
 ## Repository state and precautions
 
-- Current branch: `flight-sim/incremental-dynamics`, created from local `main`.
+- Current working branch: `main`, per the latest user instruction. The original `flight-sim/incremental-dynamics` branch remains available but predates the committed milestone.
 - Substantial tracked and untracked application work already existed before this branch, including the sandbox, visual hangar, startup, persistence, location picker, and other layers. It was preserved.
-- No commits or pushes have been made for this increment. A branch name does not back up working files remotely; continuation currently relies on this workspace.
-- Inspect `git status --short` first. Do not reset/clean the workspace or indiscriminately stage everything. The tracked diff against HEAD includes older user work and is not a clean measure of this increment.
+- The application and physics milestone are now committed on `main`, including `7632b73` (engines), `c088258` (state/workflows) and `0065b1f` (workspace wiring). Local commits have not been pushed by this agent.
+- Inspect `git status --short` first. Do not reset/clean the workspace or indiscriminately stage everything. At the start of this turn, the only untracked path was `.impeccable/`; preserve it.
 - `.env.local` is ignored and may contain a browser-scoped token. Never print or include it in a handoff, commit, screenshot log, or test output.
 - Dependencies are installed. Node here is 24.3.0. The browser driver requires Node >=22.12. A local Google Chrome is installed.
 
@@ -101,14 +101,151 @@ Existing user servers occupied 5173 and 5175, so high test ports were used witho
 
 ## Current limitations and next increments
 
-The completed milestone is airborne C172 dynamics, not a full flight simulator. Calm air only; weather layers do not drive physics. No terrain collision, runway contact, takeoff/landing, aircraft systems UI, joystick support, or full engine-state persistence. Physics has no simple-mode altitude clamp; resetting/reloading returns to the configured start. Direct keys return controls to neutral rather than leveling the aircraft. The 3D mesh is a type representation, not a matched cockpit/interior or detailed 172P model.
+The completed milestone is airborne C172 dynamics, not a full flight simulator. Calm air only; weather layers do not drive physics. Simple bare-earth contact now freezes Physics Engine and shows the crash overlay (see the terrain milestone below). No landing-gear response, runway operations, takeoff/landing, aircraft systems UI, joystick support, or full engine-state persistence. Physics has no simple-mode altitude clamp; resetting/reloading returns to the configured start. Direct keys return controls to neutral rather than leveling the aircraft. The 3D mesh is a type representation, not a matched cockpit/interior or detailed 172P model.
 
 Recommended next work, with user priorities guiding order:
 1. Connected visual flight check over actual terrain/imagery and hands-on evaluation of keyboard sensitivity, trim, and hangar interaction.
 2. An explicit stabilization/assistance layer and/or joystick input if desired, while keeping raw engine behavior testable.
 3. Physics diagnostics/instrumentation (angle of attack, load factor, engine RPM) before tuning flight handling.
-4. Terrain/ground integration as its own milestone: choose terrain source, altitude semantics, contact callbacks and safe spawn conditions, then validate landing gear/runway behavior.
+4. Extend the simple stop-on-contact terrain rule only when needed: safe spawn/AGL setup, swept or mesh collision, and then actual landing gear/runway behavior.
 5. Wind/turbulence and deliberate atmosphere configuration; do not silently use visual weather overlays as aerodynamic input.
 6. Full engine-state save/recovery only after defining a complete snapshot; never fake recovery with position/attitude alone.
 
 No implementation blocker remains for this milestone. Do not repeat the package/engine integration investigation. The real engine and browser paths work. Update this document after each future milestone with exact changes, checks, limitations and next steps. Preserve all pre-existing work and secrets.
+
+
+## Latest milestone: simple terrain contact and crash overlay
+
+User requested simple terrain collision, then a GTA5-style death overlay saying
+**Git gud kid**, with the same stop/reset behavior. Implemented on `main`; the implementation is committed as `3ddcb09`. No push was made. Earlier handoff
+sections describing airborne-only flight without contact are superseded here.
+
+- Physics Engine only; Simple Free Flight remains the independent assisted model.
+- `src/terrainContact.ts`: 1.5 m aircraft reference-point clearance, using WGS84
+  ellipsoid heights. At/below contact height, the app latches a stopped pose just
+  above the ground. This is not geometric wheel/wing/body collision or a landing.
+- `src/sandboxTerrain.ts`: reads loaded terrain beneath the aircraft and samples
+  most-detailed terrain asynchronously at most four times per second with one
+  request in flight. Most-detailed cached samples expire after 40 m or 2 seconds;
+  loaded terrain is the fallback. Five-second request timeout. Reset, relocation,
+  suspension, and provider changes invalidate pending/cached results.
+- Bare-earth terrain only; Google building/vegetation surfaces are excluded. The
+  initial EllipsoidTerrainProvider is not assumed to be real ground. If no valid
+  ground height exists, the HUD says collision unavailable and flight continues.
+- `src/sandbox.ts`: checks committed physics state, freezes pose and simulation
+  time on contact, disables Pause and physics sliders, preserves the impact
+  readouts with an At contact label, and requires Reset to resume flying. No
+  native JSBSim terrain/gear response is enabled. Reset, hangar new flight and
+  relocation clear the contact latch. Reload already starts a new physics flight.
+- `index.html` / `src/style.css`: full-screen modal crash screen with a dark,
+  desaturated backdrop, translucent horizontal band, large red **Git gud kid**
+  text, and **Reset flight** action. Focus moves to Reset; Escape cannot dismiss
+  it. Standard button keyboard activation resets, never resumes a crashed engine.
+  Motion respects prefers-reduced-motion. Existing dialogs block steering.
+- `src/terrainContact.test.ts`: contact thresholds, negative elevations, missing/
+  invalid data, loaded fallback, request limits, expiry, stale-response rejection,
+  and offline failure behavior. Included in `npm test`.
+- `scripts/validate-terrain-browser.mjs`: actual Cesium heightmap-1.0 fixture tiles
+  at 0 m and real JSBSim descent from 100 m. App/engine/Cesium code is unchanged by
+  the test; only remote terrain responses are supplied deterministically. Checks
+  stop height/time/position, blocked resume, crash text/focus/Escape, overlay Reset,
+  isolated simple mode, and unavailable terrain on reload. Screenshots go to the
+  same flight-sim-evidence directory as the existing browser suite.
+
+Reproduce with a running dev/preview server:
+
+```sh
+node scripts/validate-terrain-browser.mjs http://127.0.0.1:53144 dev
+# or point it at the production preview and label it production
+```
+
+Validation on October 18, 2026:
+- `npm test`: 73 passed, 0 failed (six new terrain tests).
+- `npm run build`: TypeScript and production bundling passed; existing EGM96
+  chunk-size warning remains.
+- Dedicated terrain/crash browser test passed in dev and production with zero
+  page errors. Impact occurred at 5.5 s in the dev run and 6.5 s in the production
+  run (keyboard input started at different times). Time and position held after
+  contact; the overlay reset restored 100 m airborne flight.
+- Existing full production flight-browser regression passed with zero page errors.
+- Crash overlay screenshot visually inspected. Evidence includes
+  `dev-terrain-contact.png` and `production-terrain-contact.png` in the OS temporary
+  `flight-sim-evidence` directory. These runs use deterministic flat terrain;
+  live mountainous terrain/Google scene contact has not been checked manually.
+- `git diff --check` passed. Changes are local on `main`; unrelated `.impeccable/`
+  remains untouched. No deployment or push performed.
+
+## Latest steering: random crash messages and visible test options
+
+The user added seven alternative crash lines and requested that straight-line,
+figure-eight and feature-enhancement scenarios be available in Demo replay. They
+explicitly value small iterations, composability across domain layers, and UI
+observability as a proxy for end-to-end trust. Preserve this direction: new
+user-visible features should include a selectable validation scenario, with
+expected observations and automated checks. See `docs/visual-validation.md`.
+
+Implemented on local `main` (implementation commit `3ddcb09`):
+- `src/crashMessages.ts`: eight lines including Git gud kid; selected once per
+  collision, not each frame. `src/crashOverlay.ts` shares display/reset/focus
+  behavior between the sandbox and validation player.
+- `src/validationScenarios.ts`: single registry of IDs, groups, names, expected
+  observations and time-based `controlsAt` schedules. Groups are Routes and
+  Feature enhancements. Route IDs are `figure-eight` and `straight-line`;
+  enhancement IDs are `c172-idle`, `c172-full-power`, `c172-right-bank` and
+  `terrain-contact`. New physics scenarios extend the registry rather than
+  adding cases to the renderer or engine adapter.
+- Real engine recordings run at 120 Hz and are sampled for 12-second replay.
+  Recordings use a labeled flat reference deck at 1000 m WGS84, starting at
+  1100 m; they do NOT claim to test online geographic terrain sampling.
+  Shared `terrainContact` detects the impact and freezes the recorded pose.
+- `src/replayScenarios.ts`: populates the selector from the registry, lazy-loads
+  the real C172 engine, records/disposes it, displays the deck and existing
+  camera views, exposes readouts/expected behavior and shares the crash modal.
+  Loading has a timeout and stale-load disposal; Restart retries failed loads.
+- `src/main.ts`: scenario-aware replay clock/duration/scrubber, pause and restart,
+  option persistence and camera/HUD integration. Physics replay owns recorded
+  altitude and attitude; conflicting manual replay overrides are disabled by
+  `src/controlAvailability.ts`. Original figure-eight replay retains its existing
+  controls and 120-second duration. Startup details reflect the selected scenario.
+- New real-engine scenario assertions are in `src/jsbsimEngine.test.ts`. The
+  randomized message pool is covered in `src/terrainContact.test.ts`.
+- `scripts/validate-replay-browser.mjs` exercises the six grouped UI options,
+  actual engine recordings, seek/pause/restart, randomized message stability,
+  contact overlay/reset, and restoration of original replay controls.
+- Browser scenario tests block external services (including same-origin data
+  proxies), preserving repeatability. Screenshots include validation-scenario
+  and validation-crash; UI screenshots were visually inspected.
+
+Validation so far: 75 automated tests pass and the production build passes.
+The development replay browser suite passed before the final group labels and
+registry composition cleanup. Final production browser results are recorded below.
+Implementation committed as `3ddcb09`; no push performed. Preserve unrelated local work.
+
+Final scenario validation (October 18, 2026):
+- `npm test`: 75 passed, 0 failed. Real-engine scenario tests verify straight-line
+  trim, right bank, power energy response, repeatable seeking and contact height.
+- Production build passed after final registry composition/group-label changes.
+- Production replay browser suite passed with zero page errors: six grouped
+  options, all physics recordings, duration/transport, seek/pause/reset,
+  randomized message stability and original figure-eight restoration.
+- Production terrain browser suite passed after shared randomized-overlay
+  integration: actual geographic-terrain adapter driven by deterministic Cesium
+  heightmap tiles, contact freeze, focus/Escape behavior, Reset, isolated simple
+  mode and unavailable-ground reporting. Zero page errors.
+- `git diff --check` passed. Final general sandbox regression is recorded below.
+- Final general production flight-browser regression passed with zero page errors,
+  covering sandbox modes, camera views, hangar, reset/relocation, persistence
+  isolation, load failure/retry and reload. An initial run read the old position
+  HUD after a fixed 200 ms delay; the test now waits for the observable relocated
+  coordinate before asserting. No application change was needed for that check.
+
+
+## Commit checkpoint
+
+The user authorized committing the completed work. Implementation and tests are
+committed on `main` as `3ddcb09` (Add terrain contact, crash overlays, and visual
+flight scenarios). This handoff, the README, CLAUDE instructions and visual
+validation design are recorded in a separate documentation commit immediately
+afterward. The code was unchanged after the recorded validation results.
+Unrelated `.impeccable/` files were deliberately excluded. No push or deployment
+was performed. Use `git log -2 --oneline` to inspect the two reviewable commits.
