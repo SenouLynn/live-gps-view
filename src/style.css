@@ -404,3 +404,12 @@ dialog::backdrop{background:rgb(2 8 12 / .72);backdrop-filter:blur(4px)}
 #sandbox-crash-reset:hover{background:rgb(255 255 255 / .18)}
 @keyframes crash-in{from{opacity:0;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.crash-band{animation:none}}
+
+#controller-dialog{max-width:680px;width:calc(100% - 48px);max-height:85vh;overflow:auto;background:#14212b;color:#e6edf3;border:1px solid #627783;border-radius:10px;padding:24px}
+#controller-dialog::backdrop{background:#0009}
+#controller-dialog p{line-height:1.5}
+.controller-axis{margin:12px 0;padding:12px;border:1px solid #627783;min-width:0}
+.controller-axis select{width:100%;margin-bottom:8px}
+.controller-axis label{display:inline-flex;align-items:center;gap:8px;margin:8px 16px 0 0}
+.controller-axis input[type=number]{width:65px}
+.controller-axis output{display:block;font-variant-numeric:tabular-nums;margin-bottom:8px}

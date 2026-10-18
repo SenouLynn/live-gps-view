@@ -111,6 +111,7 @@ test('visual replay scenarios use actual engine controls and repeatable contact 
     assert.ok(Math.abs(level.rollDeg) < 1);
     const bank = sampleValidation(records.get('c172-right-bank'), 4);
     assert.ok(bank.rollDeg > 5);
+    assert.ok(sampleValidation(records.get('controller-roll'), 4).rollDeg > 5, 'normalized controller input rolls the actual aircraft right');
     const energy = (id: string) => {
       const flight = sampleValidation(records.get(id), 8);
       return 9.80665 * flight.ellipsoidHeightM + flight.trueAirspeedMps ** 2 / 2;

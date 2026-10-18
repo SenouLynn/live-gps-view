@@ -5,3 +5,5 @@ Read [docs/flight-sim-handoff.md](docs/flight-sim-handoff.md) before continuing 
 Continue flight simulator work on `main`, as requested by the user. The application and physics milestone are now committed there. Preserve any unrelated local changes; do not reset, clean, or stage everything indiscriminately. Never read or include `.env.local` secrets in handoffs or commits.
 
 For user-visible flight features, add a selectable scenario to **Validation → Flight → Test scenario**, with expected observations and automated checks. Reuse the domain adapters and shared behavior rather than building a separate demo implementation. Read [docs/visual-validation.md](docs/visual-validation.md) for the scenario contract and extension workflow.
+
+For USB/Bluetooth controls and future ESP32, ArduPilot SITL, and black-box integration, also read [docs/controller-handoff.md](docs/controller-handoff.md). It records the latest controller implementation, architecture boundaries, and hardware validation still needed.

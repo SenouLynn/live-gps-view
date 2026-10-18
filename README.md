@@ -244,3 +244,15 @@ lines; both modes share the overlay and Reset behavior.
 
 New visible features should have a selectable validation scenario. The shared
 contract and extension process are described in [visual validation](docs/visual-validation.md).
+
+### USB and Bluetooth flight controllers
+
+In Sandbox, open **Controller setup**. Connect a radio in USB joystick mode or pair its ELRS **BLE Joystick** through the computer’s Bluetooth settings. A browser exposing the device through the Gamepad API on HTTPS or localhost is required; move a stick if the device is not listed.
+
+Assign pitch and roll, plus optional rudder and throttle. Each axis can use a different device, including a separate HOTAS throttle. Hold each end of travel and capture **Low** (lower raw number) and **High** (higher raw number), then release centering sticks and capture **Center**. Use **Reverse** to get the desired direction and adjust dead zones. Positive pitch raises the nose; positive roll banks right. Verify live normalized values before saving. Throttle uses full travel, with reversal available to put idle at either end.
+
+Save, check **Use flight controller**, then press **Resume**. Calibration persists locally; activation does not survive reload. Disconnecting any assigned device or losing browser focus pauses flight and disables controller input. Reconnect, enable again, and Resume. Unchecking controller use also pauses before returning to keyboard controls. Simple Free Flight uses pitch/roll with fixed speed; Physics Engine also uses rudder/throttle. An assigned throttle owns the throttle slider. Identically named devices cannot currently be distinguished; buttons, hats, trim wheels and Wi-Fi input are future additions.
+
+**Validation → Flight → Controller · calibrated roll** replays normalized stick input through the actual C172 engine. Automated browser checks use simulated Gamepad devices and do not prove hardware/OS compatibility. Run `node scripts/validate-controller-browser.mjs http://127.0.0.1:53146 controller` against a running development server for setup, multi-device flight response, disconnect/focus pauses and persistence checks.
+
+Implementation and future ESP32, ArduPilot SITL and black-box integration notes: [controller handoff](docs/controller-handoff.md).

@@ -142,10 +142,13 @@
         <label>Test scenario <select id="validation-scenario" aria-label="Demo replay test scenario"></select></label>
         <p id="validation-status" class="note" role="status"></p>
       </div>
-      <label hidden>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option><option value="sandbox">Keyboard sandbox</option></select></label>
+      <label hidden>Telemetry <select id="telemetry-source"><option value="demo">Demo replay</option><option value="live">YALB-GCS live</option><option value="sandbox">Flight sandbox</option></select></label>
       <label id="vehicle-control" hidden>Vehicle <select id="vehicle" disabled></select></label>
       <div id="sandbox-panel" hidden>
       <label>Sandbox mode <select id="sandbox-mode"><option value="simple">Simple Free Flight</option><option value="physics">Physics Engine</option></select></label>
+      <div class="row-actions"><button id="controller-setup" type="button">Controller setup</button></div>
+      <label><input id="controller-enable" type="checkbox"> Use flight controller</label>
+      <p id="controller-status" class="note" role="status"></p>
       <div id="physics-controls" hidden>
         <button id="physics-hangar" type="button">Aircraft · Cessna 172P · 3D hangar</button>
         <p id="physics-status" class="status" role="status"></p>
@@ -174,7 +177,7 @@
           <p id="simple-flight-speed" class="note">Simple Free Flight · fixed ground speed 50 m/s (97 kt). Demo only · no terrain collision.</p>
         </div>
         <div class="legend-follow">
-          <p class="note">Cessna 172 · demo replay and keyboard sandbox. Stable follows course with a level horizon. Aircraft attitude follows yaw, pitch and roll.</p>
+          <p class="note">Cessna 172 · demo replay and flight sandbox. Stable follows course with a level horizon. Aircraft attitude follows yaw, pitch and roll.</p>
           <p class="note">The demo figure eight climbs 120 m above the base altitude, then descends. Synthetic pitch follows the climb and descent; bank follows turn direction, limited to 35°.</p>
         </div>
       </details>

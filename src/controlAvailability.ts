@@ -33,6 +33,7 @@ export function controlAvailability(c: ControlContext): Record<string, string> {
     'replay-view': view,
     'follow-distance': follow, 'follow-elevation': follow,
     'sandbox-mode': sandbox, 'physics-hangar': sandbox, 'physics-throttle': sandbox, 'physics-trim': sandbox,
+    'controller-setup': sandbox, 'controller-enable': sandbox,
     'sandbox-fly': sandbox, 'sandbox-pause': sandbox, 'sandbox-reset': sandbox,
     vehicle: cameraOwner || (c.source !== 'live' ? 'Available with YALB-GCS telemetry.' : !c.vehicles ? 'Waiting for vehicle discovery.' : ''),
     'traffic-follow': c.overview ? `Return from ${overviewName} to select an aircraft.` : !c.traffic ? 'Enable live aircraft first.' : '',

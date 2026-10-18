@@ -26,17 +26,17 @@ try{
   await page.waitForSelector('#startup[open]');
   await page.click('input[value="demo/demo-replay"]');await page.click('#startup-action');
   await page.waitForSelector('#validation-controls:not([hidden])');
-  assert.equal(await page.$$eval('#validation-scenario option',els=>els.length),6);
+  assert.equal(await page.$$eval('#validation-scenario option',els=>els.length),7);
   assert.deepEqual(await page.$$eval('#validation-scenario optgroup',els=>els.map(el=>el.label)),['Routes','Feature enhancements']);
   await page.select('#replay-view','body');
-  for(const id of ['straight-line','c172-idle','c172-full-power','c172-right-bank']){
+  for(const id of ['straight-line','c172-idle','c172-full-power','c172-right-bank','controller-roll']){
     await choose(id);
     assert.equal(await page.$eval('#seek',el=>el.max),'12');
     assert.equal(await page.$eval('#altitude',el=>el.disabled),true);
     assert.match(await text('telemetry-status'),/C172 · IAS/);
     assert.match(await text('height-detail'),/Flat test surface 1000 m/);
     await page.$eval('#seek',el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}));});await wait(200);
-    if(id==='c172-right-bank')assert.match(await text('pose-note'),/bank [1-9]/);
+    if(id==='c172-right-bank'||id==='controller-roll')assert.match(await text('pose-note'),/bank [1-9]/);
   }
   await choose('terrain-contact');
   await page.screenshot({path:join(evidence,`${label}-validation-scenario.png`)});
@@ -55,6 +55,6 @@ try{
   assert.equal(await page.$eval('#seek',el=>el.max),'120');
   assert.equal(await page.$eval('#altitude',el=>el.disabled),false);
   assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({label,result:'passed',assertions:'six visible replay options, real engine scenarios, transport duration, seek, recorded altitude ownership, contact overlay, random message stability, overlay reset, pause, original replay restoration',errors,evidence},null,2));
+  console.log(JSON.stringify({label,result:'passed',assertions:'seven visible replay options, real engine scenarios, transport duration, seek, recorded altitude ownership, contact overlay, random message stability, overlay reset, pause, original replay restoration',errors,evidence},null,2));
 }catch(error){await page.screenshot({path:join(evidence,`${label}-replay-failure.png`)}).catch(()=>{});console.error(JSON.stringify({errors,status:await text('validation-status').catch(()=>''),telemetry:await text('telemetry-status').catch(()=>'')}));throw error;}
 finally{await browser.close();}

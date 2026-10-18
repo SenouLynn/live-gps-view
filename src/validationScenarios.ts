@@ -1,3 +1,4 @@
+import { normalizeAxis, type AxisBinding } from './controllerInput.ts';
 import { initialSandboxState } from './sandboxFlight.ts';
 import { interpolateAircraft, type AircraftEngine, type AircraftState, type AircraftControls } from './jsbsimEngine.ts';
 import { terrainContact } from './terrainContact.ts';
@@ -9,6 +10,7 @@ interface ValidationScenarioDefinition {
   expected: string;
   controlsAt?: (seconds: number, initial: AircraftState) => AircraftControls;
 }
+export const validationControllerBinding: AxisBinding = {device:'Validation stick',axis:0,min:-1,center:0,max:1,reversed:false,deadzone:.03};
 const neutral = (initial: AircraftState): AircraftControls => ({ pitch: 0, bank: 0, rudder: 0, throttle: initial.throttle, trim: 0 });
 
 /** The domain scenario contract supplies both the UI option and its engine inputs. */
@@ -22,6 +24,8 @@ export const validationScenarios = [
     controlsAt: (seconds, initial) => ({ ...neutral(initial), throttle: seconds >= 2 ? 1 : initial.throttle }) },
   { group: 'Feature enhancements', id: 'c172-right-bank', name: 'C172 · right-bank control', expected: 'Right aileron from 2–4 seconds rolls the aircraft right.',
     controlsAt: (seconds, initial) => ({ ...neutral(initial), bank: seconds >= 2 && seconds < 4 ? .5 : 0 }) },
+  { group: 'Feature enhancements', id: 'controller-roll', name: 'Controller · calibrated roll', expected: 'A simulated calibrated stick moves right from 2–4 seconds, rolling the C172 right. Uses the controller normalization; hardware connection is tested in Sandbox setup.',
+    controlsAt: (seconds, initial) => ({ ...neutral(initial), bank: normalizeAxis(seconds >= 2 && seconds < 4 ? .5 : 0, validationControllerBinding) }) },
   { group: 'Feature enhancements', id: 'terrain-contact', name: 'Terrain contact · crash and reset', expected: 'Nose-down input at 2 seconds leads to contact, a crash overlay, and Reset flight.',
     controlsAt: (seconds, initial) => ({ ...neutral(initial), pitch: seconds >= 2 ? -1 : 0 }) },
 ] as const satisfies readonly ValidationScenarioDefinition[];

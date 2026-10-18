@@ -1,3 +1,4 @@
+import { setupControllerPanel } from './controllerPanel.ts';
 import * as C from 'cesium';
 import type { setupCameraControls } from './cameraControls';
 import type { setupHangar } from './hangar';
@@ -38,6 +39,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   const clear=()=>{keys.clear();simulation.clearElapsed();if(phase==='ready')physics?.clearElapsed();};
   const pauseButton=el('sandbox-pause') as HTMLButtonElement;
   const syncPause=()=>{pauseButton.textContent=paused?'Resume':'Pause';};
+  const controller=setupControllerPanel(()=>{paused=true;if(!physicsSelected())application.sandbox.paused=true;saveApplication();clear();syncPause();});
   function status(value:string){el('physics-status').textContent=value;el('physics-status').dataset.phase=phase;}
   function syncMode(){
     el('physics-controls').hidden=!physicsSelected();
@@ -133,7 +135,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
   window.addEventListener('pageshow',event=>{if(event.persisted&&active&&physicsSelected())void initializePhysics();});
   function setActive(value:boolean){
     if(value===active)return;
-    active=value;clear();terrain.reset();
+    active=value;if(!value)controller.suspend();clear();terrain.reset();
     el('sandbox-panel').hidden=!value;el('sandbox-controls').hidden=!value;
     if(value){canvas.focus();if(physicsSelected()&&phase==='idle')void initializePhysics();}
   }
@@ -150,15 +152,18 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
     suspend(){setActive(false);},
     tick(dt:number,now:number,performanceLabel:string){
       setActive(true);
-      const controls={pitch:Number(keys.has('ArrowUp'))-Number(keys.has('ArrowDown')),bank:Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft'))};
+      const input=controller.sample();
+      const controls={pitch:input?.pitch??(Number(keys.has('ArrowUp'))-Number(keys.has('ArrowDown'))),bank:input?.bank??(Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft')))};
+      if(input?.throttle!==undefined){throttle.value=String(Math.round(input.throttle*100));syncInputs();}
       const blocked=!!document.querySelector('dialog[open]')||document.hidden;
       if(blocked)clear();
       let physicsPose:AircraftState|undefined=physicsSelected()?lastAircraftPose:undefined;
       if(physicsSelected()){
-        throttle.disabled=trim.disabled=phase!=='ready'||!!contactPose;
+        trim.disabled=phase!=='ready'||!!contactPose;
+        throttle.disabled=trim.disabled||input?.throttle!==undefined;
         if(physics&&phase==='ready'){
           try{
-            if(!paused&&!blocked&&!contactPose)physics.advance({...controls,rudder:Number(keys.has('KeyE'))-Number(keys.has('KeyQ')),throttle:Number(throttle.value)/100,trim:Number(trim.value)/100},dt);
+            if(!paused&&!blocked&&!contactPose)physics.advance({...controls,rudder:input?.rudder??(Number(keys.has('KeyE'))-Number(keys.has('KeyQ'))),throttle:input?.throttle??Number(throttle.value)/100,trim:Number(trim.value)/100},dt);
             physicsPose=contactPose??(!paused&&!blocked?physics.render(interpolateAircraft):physics.snapshot());
             if(!contactPose){
               // Check committed engine state; interpolation can trail it by one step.
@@ -203,7 +208,7 @@ export function setupSandbox(viewer:C.Viewer, follow:ReturnType<typeof setupFoll
       el('source-badge').textContent='● SANDBOX';
       el('vehicle-title').textContent=physicsSelected()?'PHYSICS ENGINE · CESSNA 172P':'SIMPLE FREE FLIGHT · CESSNA 172';
       el('pose-note').textContent=`${physicsSelected()?'JSBSim':'Simple flight'} · pitch ${render.pitchDeg.toFixed(1)}° · bank ${render.rollDeg.toFixed(1)}°`;
-      const flightStatus=contactPose&&physicsSelected()?'terrain contact · Reset to fly again':paused?'paused':blocked?'suspended':document.activeElement===canvas?'flying · keys active':'coasting · click Fly to steer';
+      const flightStatus=contactPose&&physicsSelected()?'terrain contact · Reset to fly again':paused?'paused':blocked?'suspended':controller.enabled?'flying · controller active':document.activeElement===canvas?'flying · keys active':'coasting · click Fly to steer';
       el('telemetry-status').textContent=physicsSelected()?`Physics Engine ${phase==='ready'?flightStatus:phase}`:`Simple Free Flight ${flightStatus} · 50 m/s ground speed`;
       if(physicsPose)el('physics-readout').textContent=`${contactPose?'At contact · ':''}IAS ${physicsPose.indicatedAirspeedKt.toFixed(1)} kt · GS ${(physicsPose.groundSpeedMps/.514444).toFixed(1)} kt · VS ${Math.round(physicsPose.verticalSpeedMps/.00508)} ft/min`;
       el('alt-reference').textContent='ALT · WGS84';el('alt-read').textContent=`${render.ellipsoidHeightM.toFixed(0)} m`;

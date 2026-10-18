@@ -249,3 +249,7 @@ validation design are recorded in a separate documentation commit immediately
 afterward. The code was unchanged after the recorded validation results.
 Unrelated `.impeccable/` files were deliberately excluded. No push or deployment
 was performed. Use `git log -2 --oneline` to inspect the two reviewable commits.
+
+## USB/Bluetooth controller continuation
+
+October 18, 2026: the user authorized generic USB/Bluetooth controls, future HOTAS support, ongoing Claude handoff notes, and incremental commits. Read [controller-handoff.md](controller-handoff.md) for this implementation and future ESP32, SITL, and black-box requirements. That document supersedes the earlier keyboard-only descriptions for Sandbox.

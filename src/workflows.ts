@@ -46,7 +46,7 @@ export const workflows = [
     action: 'Start replay',
   },
   {
-    id: 'sandbox', status: 'available', title: 'Sandbox', source: 'Keyboard',
+    id: 'sandbox', status: 'available', title: 'Sandbox', source: 'Keyboard / controller',
     summary: 'Simple Free Flight or C172 Physics Engine',
     paths: [{ id: 'keyboard-flight', label: 'Simple Free Flight', status: 'available' },
       { id: 'physics-flight', label: 'Physics Engine', status: 'available' }],

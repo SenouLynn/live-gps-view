@@ -27,7 +27,7 @@ figure eight remains available alongside real-engine scenarios.
 
 **Routes** contains Figure eight and Straight line (a trimmed C172 flight).
 **Feature enhancements** contains idle power, full power, right-bank input, and
-terrain contact/crash/reset. Each physics scenario lasts 12 seconds. Power and
+terrain contact/crash/reset, and calibrated controller roll. The controller scenario uses the same normalization as live Gamepad input, but cannot establish hardware connectivity. Each physics scenario lasts 12 seconds. Power and
 control changes begin at 2 seconds, giving a short baseline for comparison.
 
 Physics recordings use the actual bundled C172/JSBSim engine at 120 Hz. The flat,
